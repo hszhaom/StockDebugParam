@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h4>任务详情</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>任务信息</h5>
+                        <table class="table table-bordered">
+                            <tr>
+                                <th>任务ID:</th>
+                                <td id="task-id"></td>
+                            </tr>
+                            <tr>
+                                <th>状态:</th>
+                                <td id="task-status"></td>
+                            </tr>
+                            <tr>
+                                <th>进度:</th>
+                                <td id="task-progress"></td>
+                            </tr>
+                            <tr>
+                                <th>开始时间:</th>
+                                <td id="start-time"></td>
+                            </tr>
+                            <tr>
+                                <th>结束时间:</th>
+                                <td id="end-time"></td>
+                            </tr>
+                            <tr>
+                                <th>错误信息:</th>
+                                <td id="error-message"></td>
+                            </tr>
+                        </table>
+                        <button class="btn btn-warning" id="cancel-task-btn" style="display:none;">取消任务</button>
+                        <a href="/" class="btn btn-secondary">返回首页</a>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>参数信息</h5>
+                        <div id="parameters-container">
+                            <!-- 参数信息将通过JavaScript动态填充 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h4>任务日志</h4>
+            </div>
+            <div class="card-body">
+                <div class="log-container" id="log-container"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 获取URL中的任务ID
+    function getTaskIdFromUrl() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('task_id');
+    }
+
+    // 格式化时间
+    function formatTime(timestamp) {
+        if (!timestamp) return '-';
+        const date = new Date(timestamp);
+        return date.toLocaleString('zh-CN');
+    }
+
+    // 获取任务状态文本
+    function getStatusText(status) {
+        switch (status) {
+            case 'pending': return '待执行';
+            case 'running': return '执行中';
+            case 'completed': return '已完成';
+            case 'cancelled': return '已取消';
+            case 'error': return '执行出错';
+            default: return status;
+        }
+    }
+
+    // 加载任务详情
+    function loadTaskDetail() {
+        const taskId = getTaskIdFromUrl();
+        if (!taskId) {
+            alert('任务ID无效');
+            return;
+        }
+
+        // 更新页面标题
+        document.title = `任务详情 - ${taskId.substring(0, 8)}...`;
+
+        ajaxRequest(`/api/task/${taskId}`, 'GET', null, function(err, data) {
+            if (!err && data && data.task) {
+                const task = data.task;
+                
+                // 填充任务信息
+                document.getElementById('task-id').textContent = task.task_id;
+                document.getElementById('task-status').textContent = getStatusText(task.status);
+                document.getElementById('task-progress').textContent = `${task.current_combination_index}/${task.total_combinations}`;
+                document.getElementById('start-time').textContent = formatTime(task.start_time);
+                document.getElementById('end-time').textContent = formatTime(task.end_time);
+                document.getElementById('error-message').textContent = task.error_message || '-';
+                
+                // 显示/隐藏取消按钮
+                const cancelBtn = document.getElementById('cancel-task-btn');
+                if (task.status === 'running') {
+                    cancelBtn.style.display = 'inline-block';
+                    cancelBtn.setAttribute('data-task-id', task.task_id);
+                } else {
+                    cancelBtn.style.display = 'none';
+                }
+                
+                // 填充参数信息（如果有的话）
+                if (task.parameters && task.parameters.length > 0) {
+                    const paramsContainer = document.getElementById('parameters-container');
+                    paramsContainer.innerHTML = '';
+                    task.parameters.forEach(function(param, index) {
+                        const paramDiv = document.createElement('div');
+                        paramDiv.className = 'mb-2';
+                        paramDiv.innerHTML = `
+                            <strong>参数${index + 1}:</strong>
+                            <pre class="bg-light p-2">${JSON.stringify(param, null, 2)}</pre>
+                        `;
+                        paramsContainer.appendChild(paramDiv);
+                    });
+                }
+            } else {
+                alert('获取任务详情失败: ' + (data ? data.message : '未知错误'));
+            }
+        });
+
+        // 加载任务日志
+        loadTaskLogs(taskId);
+    }
+
+    // 加载任务日志
+    function loadTaskLogs(taskId) {
+        ajaxRequest(`/api/task/${taskId}/logs`, 'GET', null, function(err, data) {
+            if (!err && data && data.logs) {
+                const logContainer = document.getElementById('log-container');
+                logContainer.innerHTML = data.logs.join('<br>');
+                // 滚动到底部
+                logContainer.scrollTop = logContainer.scrollHeight;
+            }
+        });
+    }
+
+    // 取消任务
+    function cancelTask(taskId) {
+        if (confirm('确定要取消这个任务吗？')) {
+            ajaxRequest(`/api/task/${taskId}/cancel`, 'POST', null, function(err, data) {
+                if (!err && data.status === 'success') {
+                    alert('任务已取消');
+                    loadTaskDetail(); // 刷新任务详情
+                } else {
+                    alert('取消任务失败: ' + (data ? data.message : '未知错误'));
+                }
+            });
+        }
+    }
+
+    // 页面加载完成后获取任务详情
+    document.addEventListener('DOMContentLoaded', function() {
+        loadTaskDetail();
+        // 每5秒刷新一次任务详情
+        setInterval(loadTaskDetail, 5000);
+    });
+
+    // 绑定取消任务按钮事件
+    document.addEventListener('click', function(e) {
+        if (e.target.id === 'cancel-task-btn') {
+            const taskId = e.target.getAttribute('data-task-id');
+            cancelTask(taskId);
+        }
+    });
+</script>
+{% endblock %}

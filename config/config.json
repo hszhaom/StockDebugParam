@@ -1,0 +1,30 @@
+{
+  "spreadsheet_id": "",
+  "sheet_name": "data",
+  "token_file": "data/token.json",
+  "proxy_url": null,
+  "parameter_positions": {
+    "param1": "A1",
+    "param2": "B1",
+    "param3": "C1",
+    "param4": "D1",
+    "param5": "E1",
+    "param6": "F1"
+  },
+  "check_positions": {
+    "check1": "A2",
+    "check2": "B2",
+    "check3": "C2",
+    "check4": "D2",
+    "check5": "E2",
+    "check6": "F2"
+  },
+  "result_positions": {
+    "result1": "A3",
+    "result2": "B3",
+    "result3": "C3",
+    "result4": "D3",
+    "result5": "E3",
+    "result6": "F3"
+  }
+}

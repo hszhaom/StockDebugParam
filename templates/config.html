@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h4>系统配置</h4>
+            </div>
+            <div class="card-body">
+                <form id="config-form">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="spreadsheet_id" class="form-label">电子表格ID</label>
+                            <input type="text" class="form-control" id="spreadsheet_id" placeholder="请输入Google Sheet的ID">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="sheet_name" class="form-label">工作表名称</label>
+                            <input type="text" class="form-control" id="sheet_name" placeholder="请输入工作表名称">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="token_file" class="form-label">Token文件路径</label>
+                            <input type="text" class="form-control" id="token_file" placeholder="请输入Token文件路径">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="proxy_url" class="form-label">代理URL (可选)</label>
+                            <input type="text" class="form-control" id="proxy_url" placeholder="请输入代理URL">
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" id="save-config-btn">保存配置</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 页面加载时获取配置
+    document.addEventListener('DOMContentLoaded', function() {
+        loadConfig();
+    });
+
+    // 加载配置
+    function loadConfig() {
+        ajaxRequest('/api/config', 'GET', null, function(err, data) {
+            if (!err && data) {
+                // 填充基本配置
+                document.getElementById('spreadsheet_id').value = data.spreadsheet_id || '';
+                document.getElementById('sheet_name').value = data.sheet_name || 'data';
+                document.getElementById('token_file').value = data.token_file || 'data/token.json';
+                document.getElementById('proxy_url').value = data.proxy_url || '';
+            }
+        });
+    }
+
+    // 表单提交处理
+    document.getElementById('config-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // 构造配置对象
+        const config = {
+            spreadsheet_id: document.getElementById('spreadsheet_id').value,
+            sheet_name: document.getElementById('sheet_name').value,
+            token_file: document.getElementById('token_file').value,
+            proxy_url: document.getElementById('proxy_url').value || null
+        };
+        
+        // 禁用保存按钮
+        const saveBtn = document.getElementById('save-config-btn');
+        saveBtn.disabled = true;
+        saveBtn.textContent = '保存中...';
+        
+        // 发送保存请求
+        ajaxRequest('/api/config', 'POST', config, function(err, data) {
+            saveBtn.disabled = false;
+            saveBtn.textContent = '保存配置';
+            
+            if (err) {
+                alert('保存配置失败: ' + err.message);
+                return;
+            }
+            
+            if (data.status === 'success') {
+                alert('配置保存成功');
+            } else {
+                alert('保存配置失败: ' + data.message);
+            }
+        });
+    });
+</script>
+{% endblock %}
