@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h4>任务概览</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="card text-white bg-primary mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title" id="total-tasks">0</h5>
+                                <p class="card-text">总任务数</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-white bg-success mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title" id="completed-tasks">0</h5>
+                                <p class="card-text">已完成</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-white bg-warning mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title" id="running-tasks">0</h5>
+                                <p class="card-text">执行中</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-white bg-danger mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title" id="error-tasks">0</h5>
+                                <p class="card-text">执行出错</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center">
+                    <a href="/create" class="btn btn-primary btn-lg">创建新任务</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h4>最近任务</h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped" id="tasks-table">
+                        <thead>
+                            <tr>
+                                <th>任务ID</th>
+                                <th>状态</th>
+                                <th>进度</th>
+                                <th>开始时间</th>
+                                <th>结束时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tasks-table-body">
+                            <!-- 任务列表将通过JavaScript动态填充 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 格式化时间
+    function formatTime(timestamp) {
+        if (!timestamp) return '-';
+        const date = new Date(timestamp);
+        return date.toLocaleString('zh-CN');
+    }
+
+    // 获取任务状态文本
+    function getStatusText(status) {
+        switch (status) {
+            case 'pending': return '待执行';
+            case 'running': return '执行中';
+            case 'completed': return '已完成';
+            case 'cancelled': return '已取消';
+            case 'error': return '执行出错';
+            default: return status;
+        }
+    }
+
+    // 获取任务状态类
+    function getStatusClass(status) {
+        switch (status) {
+            case 'pending': return 'badge bg-secondary';
+            case 'running': return 'badge bg-warning';
+            case 'completed': return 'badge bg-success';
+            case 'cancelled': return 'badge bg-info';
+            case 'error': return 'badge bg-danger';
+            default: return 'badge bg-secondary';
+        }
+    }
+
+    // 获取所有任务
+    function loadTasks() {
+        ajaxRequest('/api/tasks', 'GET', null, function(err, data) {
+            if (!err && data && data.tasks) {
+                const tbody = document.getElementById('tasks-table-body');
+                
+                // 清空现有内容
+                tbody.innerHTML = '';
+                
+                // 更新统计信息
+                updateStatistics(data.tasks);
+                
+                // 只显示最近10个任务
+                const recentTasks = data.tasks.slice(0, 10);
+                
+                // 填充任务列表
+                recentTasks.forEach(function(task) {
+                    // 添加到表格
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${task.task_id.substring(0, 8)}...</td>
+                        <td><span class="${getStatusClass(task.status)}">${getStatusText(task.status)}</span></td>
+                        <td>${task.current_combination_index}/${task.total_combinations}</td>
+                        <td>${formatTime(task.start_time)}</td>
+                        <td>${formatTime(task.end_time)}</td>
+                        <td>
+                            <a href="/detail?task_id=${task.task_id}" class="btn btn-sm btn-info">查看详情</a>
+                            ${task.status === 'running' ? `<button class="btn btn-sm btn-warning cancel-task" data-task-id="${task.task_id}">取消</button>` : ''}
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                
+                // 绑定取消任务事件
+                document.querySelectorAll('.cancel-task').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        const taskId = this.getAttribute('data-task-id');
+                        cancelTask(taskId);
+                    });
+                });
+            }
+        });
+    }
+
+    // 更新统计信息
+    function updateStatistics(tasks) {
+        const totalTasks = tasks.length;
+        const completedTasks = tasks.filter(task => task.status === 'completed').length;
+        const runningTasks = tasks.filter(task => task.status === 'running').length;
+        const errorTasks = tasks.filter(task => task.status === 'error').length;
+        
+        document.getElementById('total-tasks').textContent = totalTasks;
+        document.getElementById('completed-tasks').textContent = completedTasks;
+        document.getElementById('running-tasks').textContent = runningTasks;
+        document.getElementById('error-tasks').textContent = errorTasks;
+    }
+
+    // 取消任务
+    function cancelTask(taskId) {
+        if (confirm('确定要取消这个任务吗？')) {
+            ajaxRequest(`/api/task/${taskId}/cancel`, 'POST', null, function(err, data) {
+                if (!err && data.status === 'success') {
+                    alert('任务已取消');
+                    loadTasks();
+                } else {
+                    alert('取消任务失败: ' + (data ? data.message : '未知错误'));
+                }
+            });
+        }
+    }
+
+    // 页面加载完成后启动任务列表轮询
+    document.addEventListener('DOMContentLoaded', function() {
+        loadTasks();
+        setInterval(loadTasks, 5000); // 每5秒刷新一次任务列表
+    });
+</script>
+{% endblock %}
