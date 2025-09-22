@@ -4,27 +4,27 @@
   "token_file": "data/token.json",
   "proxy_url": null,
   "parameter_positions": {
-    "param1": "A1",
-    "param2": "B1",
-    "param3": "C1",
-    "param4": "D1",
-    "param5": "E1",
-    "param6": "F1"
+    "param1": "B6",
+    "param2": "B7",
+    "param3": "B8",
+    "param4": "B9",
+    "param5": "B10",
+    "param6": "B11"
   },
   "check_positions": {
-    "check1": "A2",
-    "check2": "B2",
-    "check3": "C2",
-    "check4": "D2",
-    "check5": "E2",
-    "check6": "F2"
+    "check1": "I6",
+    "check2": "I7",
+    "check3": "I8",
+    "check4": "I9",
+    "check5": "I10",
+    "check6": "I11"
   },
   "result_positions": {
-    "result1": "A3",
-    "result2": "B3",
-    "result3": "C3",
-    "result4": "D3",
-    "result5": "E3",
-    "result6": "F3"
+    "result1": "I15",
+    "result2": "I16",
+    "result3": "I17",
+    "result4": "I18",
+    "result5": "I19",
+    "result6": "I20"
   }
 }
