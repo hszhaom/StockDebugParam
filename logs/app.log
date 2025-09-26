@@ -81,3 +81,19 @@
 2025-09-20 16:34:52,929 - INFO - 任务状态加载成功
 2025-09-20 16:35:29,571 - INFO - 配置加载成功
 2025-09-20 16:35:29,571 - INFO - 任务状态加载成功
+2025-09-26 15:08:35,969 - app.services.config_manager - ERROR - 加载配置失败: Working outside of application context.
+
+This typically means that you attempted to use functionality that needed
+the current application. To solve this, set up an application context
+with app.app_context(). See the documentation for more information.
+2025-09-26 15:08:36,620 - app.services.config_manager - ERROR - 加载配置失败: Working outside of application context.
+
+This typically means that you attempted to use functionality that needed
+the current application. To solve this, set up an application context
+with app.app_context(). See the documentation for more information.
+2025-09-26 15:21:13,394 - app.services.config_manager - INFO - 加载了 0 个配置项
+2025-09-26 15:21:24,383 - app.services.config_manager - INFO - 加载了 0 个配置项
+2025-09-26 15:22:29,659 - app.services.config_manager - INFO - 加载了 0 个配置项
+2025-09-26 15:23:11,033 - app.services.config_manager - INFO - 加载了 0 个配置项
+2025-09-26 15:23:11,864 - app.services.config_manager - INFO - 加载了 0 个配置项
+2025-09-26 15:23:52,692 - app.services.config_manager - INFO - 加载了 0 个配置项

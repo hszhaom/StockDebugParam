@@ -1,0 +1,181 @@
+{% extends "google_sheet/base.html" %}
+
+{% block title %}首页 - Google Sheet 参数批量校验{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="bi bi-speedometer2"></i> 任务概览
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="card text-white bg-primary mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title" id="total-tasks">0</h5>
+                                <p class="card-text">总任务数</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-white bg-success mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title" id="completed-tasks">0</h5>
+                                <p class="card-text">已完成</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-white bg-warning mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title" id="running-tasks">0</h5>
+                                <p class="card-text">执行中</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-white bg-danger mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title" id="error-tasks">0</h5>
+                                <p class="card-text">执行出错</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center">
+                    <a href="{{ url_for('google_sheet.create') }}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-plus-circle"></i> 创建新任务
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="bi bi-clock-history"></i> 最近任务
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped" id="tasks-table">
+                        <thead>
+                            <tr>
+                                <th>任务名称</th>
+                                <th>状态</th>
+                                <th>进度</th>
+                                <th>开始时间</th>
+                                <th>结束时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tasks-table-body">
+                            <!-- 任务列表将通过JavaScript动态填充 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 页面加载完成后启动任务列表轮询
+    document.addEventListener('DOMContentLoaded', function() {
+        loadTasks();
+        setInterval(loadTasks, 5000); // 每5秒刷新一次任务列表
+    });
+
+    // 获取所有任务
+    function loadTasks() {
+        ajaxRequest('/api/tasks', 'GET', null, function(err, data) {
+            if (!err && data && data.tasks) {
+                const tbody = document.getElementById('tasks-table-body');
+                
+                // 清空现有内容
+                tbody.innerHTML = '';
+                
+                // 更新统计信息
+                updateStatistics(data.tasks);
+                
+                // 只显示最近10个任务
+                const recentTasks = data.tasks.slice(0, 10);
+                
+                // 填充任务列表
+                recentTasks.forEach(function(task) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${task.name}</td>
+                        <td><span class="${getStatusClass(task.status)}">${getStatusText(task.status)}</span></td>
+                        <td>
+                            ${task.total_steps > 0 ? `
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar" role="progressbar" 
+                                         style="width: ${(task.current_step / task.total_steps * 100)}%">
+                                        ${task.current_step}/${task.total_steps}
+                                    </div>
+                                </div>
+                            ` : '<span class="text-muted">-</span>'}
+                        </td>
+                        <td>${formatTime(task.start_time)}</td>
+                        <td>${formatTime(task.end_time)}</td>
+                        <td>
+                            <a href="{{ url_for('google_sheet.detail') }}?task_id=${task.id}" class="btn btn-sm btn-info">
+                                <i class="bi bi-eye"></i> 查看详情
+                            </a>
+                            ${task.status === 'running' ? `
+                                <button class="btn btn-sm btn-warning cancel-task" data-task-id="${task.id}">
+                                    <i class="bi bi-stop-circle"></i> 取消
+                                </button>
+                            ` : ''}
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                
+                // 绑定取消任务事件
+                document.querySelectorAll('.cancel-task').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        const taskId = this.getAttribute('data-task-id');
+                        cancelTask(taskId);
+                    });
+                });
+            }
+        });
+    }
+
+    // 更新统计信息
+    function updateStatistics(tasks) {
+        const totalTasks = tasks.length;
+        const completedTasks = tasks.filter(task => task.status === 'completed').length;
+        const runningTasks = tasks.filter(task => task.status === 'running').length;
+        const errorTasks = tasks.filter(task => task.status === 'error').length;
+        
+        document.getElementById('total-tasks').textContent = totalTasks;
+        document.getElementById('completed-tasks').textContent = completedTasks;
+        document.getElementById('running-tasks').textContent = runningTasks;
+        document.getElementById('error-tasks').textContent = errorTasks;
+    }
+
+    // 取消任务
+    function cancelTask(taskId) {
+        if (confirm('确定要取消这个任务吗？')) {
+            ajaxRequest(`/api/tasks/${taskId}/cancel`, 'POST', null, function(err, data) {
+                if (!err && data.status === 'success') {
+                    showNotification('任务已取消', 'success');
+                    loadTasks();
+                } else {
+                    showNotification('取消任务失败: ' + (data ? data.message : '未知错误'), 'error');
+                }
+            });
+        }
+    }
+</script>
+{% endblock %}

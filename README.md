@@ -1,149 +1,243 @@
-# 谷歌参数批量校验系统
+# Google Sheet 参数批量校验系统
 
-这是一个用于批量执行Google Sheet参数组合并校验结果的Web应用。
+一个基于 Flask 的 Google Sheet 参数批量校验系统，支持参数组合批量执行、任务管理、实时监控等功能。
 
 ## 功能特性
 
-1. **参数配置**：支持配置6个参数列表，系统会自动生成所有可能的参数组合
-2. **Google Sheet集成**：自动将参数写入指定的Google Sheet位置
-3. **多任务执行**：支持同时执行多个任务，互不干扰
-4. **进度保持**：任务执行进度会自动保存，即使应用重启也能继续执行
-5. **实时日志**：提供实时执行日志查看
-6. **结果检查**：定时检查执行结果并获取返回值
-7. **任务管理**：可以查看、取消正在执行的任务
-8. **多页面设计**：首页、创建任务页、任务详情页分离，操作更清晰
-9. **灵活配置**：支持通过ID或URL指定电子表格，工作表名称下拉选择，Token认证方式灵活
-10. **参数组合预览**：创建任务时显示参数组合数量
-11. **执行确认机制**：第一次执行完成后通过SSE返回结果到前端确认，确认后继续执行
-12. **模块化设计**：任务执行逻辑独立封装，便于维护和扩展
+### 🎯 核心功能
+- **参数批量校验**: 支持多参数组合的批量执行
+- **Google Sheet 集成**: 直接与 Google Sheet 交互，自动写入参数和获取结果
+- **任务管理**: 完整的任务生命周期管理
+- **实时监控**: 基于 SSE 的实时任务状态更新
+- **结果确认**: 第一次执行结果确认机制
 
-## 系统要求
+### 🛠 管理功能
+- **管理面板**: 现代化的 Web 管理界面
+- **任务监控**: 实时查看任务执行状态和进度
+- **配置管理**: 灵活的系统配置管理
+- **日志系统**: 完整的操作日志记录
+- **数据持久化**: 基于 SQLite 的数据存储
 
-- Python 3.6+
-- Flask
-- gspread
-- google-auth
-- httpx
+### 🎨 界面特性
+- **响应式设计**: 支持桌面和移动设备
+- **现代化 UI**: 基于 Bootstrap 5 的现代化界面
+- **实时更新**: 无需刷新页面的实时数据更新
+- **用户友好**: 直观的操作界面和交互体验
 
-## 安装依赖
+## 系统架构
 
-```bash
-pip install flask gspread google-auth httpx
+### 后端架构
 ```
+app/
+├── __init__.py          # 应用工厂
+├── config.py            # 配置管理
+├── extensions.py        # 扩展初始化
+├── models.py            # 数据模型
+├── routes/              # 路由模块
+│   ├── admin.py         # 管理面板路由
+│   ├── api.py           # API 路由
+│   └── google_sheet.py  # Google Sheet 模块路由
+├── services/            # 业务逻辑服务
+│   ├── task_manager.py      # 任务管理器
+│   ├── google_sheet_service.py  # Google Sheet 服务
+│   └── config_manager.py    # 配置管理器
+└── utils/               # 工具模块
+    └── logger.py        # 日志工具
+```
+
+### 前端架构
+```
+templates/
+├── admin/               # 管理面板模板
+│   ├── base.html       # 管理面板基础模板
+│   ├── dashboard.html  # 仪表盘
+│   ├── tasks.html      # 任务管理
+│   ├── config.html     # 配置管理
+│   └── logs.html       # 日志管理
+└── google_sheet/       # Google Sheet 模块模板
+    ├── base.html       # Google Sheet 基础模板
+    ├── index.html      # 首页
+    ├── create.html     # 创建任务
+    └── detail.html     # 任务详情
+```
+
+## 安装和配置
+
+### 1. 环境要求
+- Python 3.8+
+- pip
+
+### 2. 安装依赖
+```bash
+pip install -r requirements.txt
+```
+
+### 3. 初始化数据库
+```bash
+python run.py init-db
+```
+
+### 4. 初始化默认配置
+```bash
+python run.py init-config
+```
+
+### 5. 启动应用
+```bash
+python run.py
+```
+
+应用将在 `http://localhost:5000` 启动。
+
+## 使用指南
+
+### 1. 访问管理面板
+打开浏览器访问 `http://localhost:5000/admin/` 进入管理面板。
+
+### 2. 配置 Google Sheet
+1. 在管理面板中点击"系统配置"
+2. 配置 Google Sheet 相关参数：
+   - 电子表格ID
+   - 工作表名称
+   - Token 文件路径
+   - 参数位置配置
+   - 检查位置配置
+   - 结果位置配置
+
+### 3. 创建任务
+1. 点击"Google Sheet"进入参数批量校验模块
+2. 点击"创建新任务"
+3. 填写任务配置：
+   - Google Sheet 配置
+   - 参数列表（JSON 数组格式）
+4. 提交任务
+
+### 4. 监控任务
+- 在管理面板的"任务管理"中查看所有任务
+- 实时查看任务执行状态和进度
+- 查看任务日志和结果
 
 ## 配置说明
 
-### 1. Google认证配置
-- 可以通过文件路径指定Token文件
-- 也可以直接传入JSON字符串
+### Google Sheet 配置
+```json
+{
+  "spreadsheet_id": "your_spreadsheet_id",
+  "sheet_name": "data",
+  "token_file": "data/token.json",
+  "proxy_url": null,
+  "parameter_positions": {
+    "param1": "B6",
+    "param2": "B7",
+    "param3": "B8"
+  },
+  "check_positions": {
+    "check1": "I6",
+    "check2": "I7",
+    "check3": "I8"
+  },
+  "result_positions": {
+    "result1": "I15",
+    "result2": "I16",
+    "result3": "I17"
+  }
+}
+```
 
-### 2. 系统配置
-- 电子表格ID：可以是ID或完整URL
-- 工作表名称：提供常用选项的下拉框选择
-- Token认证：支持文件路径和JSON字符串两种方式
+### 参数配置示例
+```json
+[
+  ["value1", "value2", "value3"],
+  ["option1", "option2"],
+  ["setting1", "setting2"]
+]
+```
 
-## 使用方法
+## API 接口
 
-1. 启动应用：
+### 任务管理 API
+- `GET /api/tasks` - 获取所有任务
+- `POST /api/tasks` - 创建新任务
+- `GET /api/tasks/{task_id}` - 获取任务详情
+- `POST /api/tasks/{task_id}/cancel` - 取消任务
+- `GET /api/tasks/{task_id}/logs` - 获取任务日志
+- `GET /api/tasks/{task_id}/results` - 获取任务结果
+
+### 配置管理 API
+- `GET /api/config` - 获取系统配置
+- `POST /api/config` - 更新系统配置
+- `GET /api/config/google-sheet` - 获取 Google Sheet 配置
+- `POST /api/config/google-sheet` - 更新 Google Sheet 配置
+
+### 实时事件 API
+- `GET /api/tasks/{task_id}/events` - SSE 事件流
+- `POST /api/tasks/{task_id}/confirm` - 确认任务继续执行
+
+## 开发指南
+
+### 项目结构
+- `app/` - 应用核心代码
+- `templates/` - 前端模板
+- `static/` - 静态资源
+- `data/` - 数据文件
+- `logs/` - 日志文件
+- `migrations/` - 数据库迁移文件
+
+### 添加新功能
+1. 在 `app/services/` 中添加业务逻辑
+2. 在 `app/routes/` 中添加路由
+3. 在 `templates/` 中添加前端模板
+4. 更新数据库模型（如需要）
+
+### 数据库迁移
 ```bash
-python app.py
+# 创建迁移
+flask db migrate -m "描述"
+
+# 应用迁移
+flask db upgrade
 ```
 
-2. 访问应用：
-- 首页：http://localhost:5000
-- 创建任务页面：http://localhost:5000/create
-- 配置页面：http://localhost:5000/config
-- 任务详情页面：http://localhost:5000/detail?task_id=[任务ID]
+## 故障排除
 
-3. 在创建任务页面配置Google Sheet相关信息
+### 常见问题
+1. **Google Sheet 连接失败**
+   - 检查 Token 文件是否正确
+   - 确认电子表格ID是否正确
+   - 检查网络连接和代理设置
 
-4. 输入6个参数的JSON数组格式列表
+2. **任务执行失败**
+   - 查看任务日志了解具体错误
+   - 检查参数格式是否正确
+   - 确认 Google Sheet 权限设置
 
-5. 点击"创建任务并执行"按钮创建新任务
+3. **页面无法访问**
+   - 确认应用已正确启动
+   - 检查端口是否被占用
+   - 查看应用日志
 
-6. 可以在首页查看所有任务的执行状态
+### 日志查看
+- 应用日志：`logs/app.log`
+- 管理面板：系统日志页面
+- 任务日志：任务详情页面
 
-## 目录结构
+## 许可证
 
-```
-.
-├── app.py                 # 主应用文件
-├── googlesheet.py         # Google Sheet操作模块
-├── logger.py              # 日志模块
-├── config/
-│   └── config.json        # 系统配置文件
-├── data/
-│   ├── token.json         # Google认证文件（需要手动添加）
-│   └── tasks.json         # 任务状态文件（自动生成）
-├── tasks/
-│   └── google_sheet_task.py # Google Sheet任务执行器
-├── templates/
-│   ├── base.html          # 基础模板
-│   ├── index.html         # 首页
-│   ├── create.html        # 创建任务页面
-│   ├── detail.html        # 任务详情页面
-│   └── config.html        # 配置页面
-└── static/                # 静态文件目录
-```
+本项目采用 MIT 许可证。详见 [LICENSE](LICENSE) 文件。
 
-## 页面功能说明
+## 贡献
 
-### 首页 (/)
-- 显示任务统计信息（总任务数、已完成、执行中、执行出错）
-- 显示最近任务列表
-- 提供创建新任务的按钮
+欢迎提交 Issue 和 Pull Request 来改进项目。
 
-### 创建任务页面 (/create)
-- 专门用于创建新任务
-- 支持通过ID或URL指定电子表格
-- 工作表名称提供下拉框选择（data, data-1Y, data-3Y, data-7Y等）
-- Token认证支持文件路径和JSON字符串两种方式
-- 包含6个参数输入框
-- 显示参数组合数量预览
-- 通过SSE实时接收任务状态和确认请求
-- 第一次执行完成后显示确认模态框
-- 确认后继续执行剩余参数组合
+## 更新日志
 
-### 任务详情页面 (/detail?task_id=[任务ID])
-- 显示任务详细信息（状态、进度、时间等）
-- 显示任务参数信息
-- 显示任务执行日志
-- 可以取消正在执行的任务
+### v2.0.0 (2024-01-XX)
+- 重构为现代化架构
+- 添加管理面板
+- 改进任务管理系统
+- 优化用户界面
+- 增强错误处理
 
-### 配置页面 (/config)
-- 配置系统默认的Google Sheet连接信息
-
-## 多任务执行说明
-
-1. 系统支持同时执行多个任务，每个任务独立运行
-2. 任务状态会自动保存到 `data/tasks.json` 文件中
-3. 即使应用重启，未完成的任务也会继续执行
-4. 可以随时取消正在执行的任务
-5. 每个任务都有独立的日志记录
-
-## 执行确认机制
-
-1. 系统会在第一次执行完成后通过SSE发送结果到前端
-2. 前端会显示确认模态框，展示第一次执行的参数和结果
-3. 用户确认后继续执行后续参数组合
-4. 用户拒绝或超时则停止执行
-5. 通过任务状态模态框实时查看执行进度
-
-## 模块化设计
-
-### Google Sheet任务执行器 (tasks/google_sheet_task.py)
-- 独立封装了Google Sheet任务的执行逻辑
-- 负责参数组合生成、执行、结果检查等核心功能
-- 通过SSE与前端进行实时通信
-- 实现了第一次执行确认机制
-
-### 主应用 (app.py)
-- 负责Web路由、API接口、任务调度等
-- 与任务执行器解耦，便于维护和扩展
-
-## 注意事项
-
-1. 确保Google Sheet的认证配置正确
-2. 系统会每分钟检查一次执行结果，最多等待60分钟
-3. 任务执行过程中不要删除 `data/tasks.json` 文件
-4. 如果需要清理所有任务记录，可以删除 `data/tasks.json` 文件
+### v1.0.0 (2024-01-XX)
+- 初始版本
+- 基本的 Google Sheet 参数批量校验功能

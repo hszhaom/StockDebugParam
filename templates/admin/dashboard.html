@@ -1,0 +1,235 @@
+{% extends "admin/base.html" %}
+
+{% block title %}仪表盘 - 任务管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">仪表盘</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshDashboard()">
+                <i class="bi bi-arrow-clockwise"></i> 刷新
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 统计卡片 -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-uppercase mb-1">总任务数</div>
+                        <div class="h5 mb-0 font-weight-bold" id="total-tasks">{{ total_tasks }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-list-task fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card success h-100">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-uppercase mb-1">已完成</div>
+                        <div class="h5 mb-0 font-weight-bold" id="completed-tasks">{{ completed_tasks }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-check-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card warning h-100">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-uppercase mb-1">执行中</div>
+                        <div class="h5 mb-0 font-weight-bold" id="running-tasks">{{ running_tasks }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-play-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card danger h-100">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-uppercase mb-1">执行出错</div>
+                        <div class="h5 mb-0 font-weight-bold" id="error-tasks">{{ error_tasks }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-exclamation-triangle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 最近任务 -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="bi bi-clock-history"></i> 最近任务
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>任务名称</th>
+                        <th>类型</th>
+                        <th>状态</th>
+                        <th>进度</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="recent-tasks-table">
+                    {% for task in recent_tasks %}
+                    <tr>
+                        <td>{{ task.name }}</td>
+                        <td>
+                            <span class="badge bg-info">{{ task.task_type }}</span>
+                        </td>
+                        <td>
+                            <span class="{{ getStatusClass(task.status) }}">{{ getStatusText(task.status) }}</span>
+                        </td>
+                        <td>
+                            {% if task.total_steps > 0 %}
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar" role="progressbar" 
+                                         style="width: {{ (task.current_step / task.total_steps * 100) }}%">
+                                        {{ task.current_step }}/{{ task.total_steps }}
+                                    </div>
+                                </div>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ formatTime(task.created_at) }}</td>
+                        <td>
+                            <a href="{{ url_for('admin.tasks') }}?task_id={{ task.id }}" 
+                               class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> 查看
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 快速操作 -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-lightning"></i> 快速操作
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('google_sheet.create') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> 创建Google Sheet任务
+                    </a>
+                    <a href="{{ url_for('admin.tasks') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-list-task"></i> 查看所有任务
+                    </a>
+                    <a href="{{ url_for('admin.config') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-gear"></i> 系统配置
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-info-circle"></i> 系统信息
+                </h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li><strong>系统版本:</strong> v1.0.0</li>
+                    <li><strong>运行状态:</strong> <span class="badge bg-success">正常</span></li>
+                    <li><strong>最后更新:</strong> <span id="last-update" class="current-time"></span></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function refreshDashboard() {
+        // 刷新页面
+        location.reload();
+    }
+
+    // 页面加载完成后启动定时刷新
+    document.addEventListener('DOMContentLoaded', function() {
+        // 初始化时间显示
+        document.getElementById('last-update').textContent = formatTime(new Date().toISOString());
+        
+        // 每30秒自动刷新一次
+        setInterval(function() {
+            // 只刷新统计数据，不刷新整个页面
+            ajaxRequest('/api/tasks', 'GET', null, function(err, data) {
+                if (!err && data && data.tasks) {
+                    updateStatistics(data.tasks);
+                }
+            });
+        }, 30000);
+    });
+
+    function formatTime(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+    }
+
+    function updateStatistics(tasks) {
+        const totalTasks = tasks.length;
+        const completedTasks = tasks.filter(task => task.status === 'completed').length;
+        const runningTasks = tasks.filter(task => task.status === 'running').length;
+        const errorTasks = tasks.filter(task => task.status === 'error').length;
+        
+        document.getElementById('total-tasks').textContent = totalTasks;
+        document.getElementById('completed-tasks').textContent = completedTasks;
+        document.getElementById('running-tasks').textContent = runningTasks;
+        document.getElementById('error-tasks').textContent = errorTasks;
+        
+        // 更新最后更新时间
+        document.getElementById('last-update').textContent = formatTime(new Date().toISOString());
+    }
+</script>
+{% endblock %}
