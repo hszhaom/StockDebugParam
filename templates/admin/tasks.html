@@ -1,0 +1,429 @@
+{% extends "admin/base.html" %}
+
+{% block title %}任务管理 - 任务管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">任务管理</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshTasks()">
+                <i class="bi bi-arrow-clockwise"></i> 刷新
+            </button>
+        </div>
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-primary" onclick="showCreateTaskModal()">
+                <i class="bi bi-plus-circle"></i> 创建任务
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 任务筛选 -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <label for="status-filter" class="form-label">状态筛选</label>
+                <select class="form-select" id="status-filter" onchange="filterTasks()">
+                    <option value="">全部状态</option>
+                    <option value="pending">待执行</option>
+                    <option value="running">执行中</option>
+                    <option value="completed">已完成</option>
+                    <option value="cancelled">已取消</option>
+                    <option value="error">执行出错</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="type-filter" class="form-label">类型筛选</label>
+                <select class="form-select" id="type-filter" onchange="filterTasks()">
+                    <option value="">全部类型</option>
+                    <option value="google_sheet">Google Sheet</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="search-input" class="form-label">搜索</label>
+                <input type="text" class="form-control" id="search-input" placeholder="搜索任务名称..." onkeyup="filterTasks()">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-grid">
+                    <button type="button" class="btn btn-outline-secondary" onclick="clearFilters()">
+                        <i class="bi bi-x-circle"></i> 清除筛选
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 任务列表 -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="bi bi-list-task"></i> 任务列表
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>任务名称</th>
+                        <th>类型</th>
+                        <th>状态</th>
+                        <th>进度</th>
+                        <th>创建时间</th>
+                        <th>开始时间</th>
+                        <th>结束时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="tasks-table-body">
+                    <!-- 任务列表将通过JavaScript动态填充 -->
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- 分页 -->
+        <nav aria-label="任务分页">
+            <ul class="pagination justify-content-center" id="pagination">
+                <!-- 分页将通过JavaScript动态生成 -->
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<!-- 创建任务模态框 -->
+<div class="modal fade" id="createTaskModal" tabindex="-1" aria-labelledby="createTaskModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createTaskModalLabel">创建新任务</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="create-task-form">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="task-name" class="form-label">任务名称</label>
+                            <input type="text" class="form-control" id="task-name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="task-type" class="form-label">任务类型</label>
+                            <select class="form-select" id="task-type" required>
+                                <option value="google_sheet">Google Sheet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="task-description" class="form-label">任务描述</label>
+                        <textarea class="form-control" id="task-description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="task-config" class="form-label">任务配置 (JSON格式)</label>
+                        <textarea class="form-control" id="task-config" rows="10" required></textarea>
+                        <div class="form-text">请输入有效的JSON格式配置</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="createTask()">创建任务</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 任务详情模态框 -->
+<div class="modal fade" id="taskDetailModal" tabindex="-1" aria-labelledby="taskDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="taskDetailModalLabel">任务详情</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>基本信息</h6>
+                        <table class="table table-sm">
+                            <tr><th>任务ID:</th><td id="detail-task-id"></td></tr>
+                            <tr><th>任务名称:</th><td id="detail-task-name"></td></tr>
+                            <tr><th>任务类型:</th><td id="detail-task-type"></td></tr>
+                            <tr><th>状态:</th><td id="detail-task-status"></td></tr>
+                            <tr><th>进度:</th><td id="detail-task-progress"></td></tr>
+                            <tr><th>创建时间:</th><td id="detail-task-created"></td></tr>
+                            <tr><th>开始时间:</th><td id="detail-task-started"></td></tr>
+                            <tr><th>结束时间:</th><td id="detail-task-ended"></td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>任务配置</h6>
+                        <pre id="detail-task-config" class="bg-light p-3" style="max-height: 300px; overflow-y: auto;"></pre>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>任务日志</h6>
+                        <div class="log-container" id="detail-task-logs"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-warning" id="cancel-task-btn" onclick="cancelTask()" style="display: none;">取消任务</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let allTasks = [];
+    let filteredTasks = [];
+    let currentPage = 1;
+    const itemsPerPage = 10;
+    let currentTaskId = null;
+
+    // 页面加载完成后获取任务列表
+    document.addEventListener('DOMContentLoaded', function() {
+        loadTasks();
+        // 每10秒自动刷新一次
+        setInterval(loadTasks, 10000);
+    });
+
+    function loadTasks() {
+        ajaxRequest('/api/tasks', 'GET', null, function(err, data) {
+            if (!err && data && data.tasks) {
+                allTasks = data.tasks;
+                filterTasks();
+            } else {
+                showNotification('获取任务列表失败', 'error');
+            }
+        });
+    }
+
+    function filterTasks() {
+        const statusFilter = document.getElementById('status-filter').value;
+        const typeFilter = document.getElementById('type-filter').value;
+        const searchInput = document.getElementById('search-input').value.toLowerCase();
+
+        filteredTasks = allTasks.filter(task => {
+            const statusMatch = !statusFilter || task.status === statusFilter;
+            const typeMatch = !typeFilter || task.task_type === typeFilter;
+            const searchMatch = !searchInput || task.name.toLowerCase().includes(searchInput);
+            
+            return statusMatch && typeMatch && searchMatch;
+        });
+
+        currentPage = 1;
+        renderTasks();
+        renderPagination();
+    }
+
+    function clearFilters() {
+        document.getElementById('status-filter').value = '';
+        document.getElementById('type-filter').value = '';
+        document.getElementById('search-input').value = '';
+        filterTasks();
+    }
+
+    function renderTasks() {
+        const tbody = document.getElementById('tasks-table-body');
+        tbody.innerHTML = '';
+
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const pageTasks = filteredTasks.slice(startIndex, endIndex);
+
+        pageTasks.forEach(task => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${task.name}</td>
+                <td><span class="badge bg-info">${task.task_type}</span></td>
+                <td><span class="${getStatusClass(task.status)}">${getStatusText(task.status)}</span></td>
+                <td>
+                    ${task.total_steps > 0 ? `
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar" role="progressbar" 
+                                 style="width: ${(task.current_step / task.total_steps * 100)}%">
+                                ${task.current_step}/${task.total_steps}
+                            </div>
+                        </div>
+                    ` : '<span class="text-muted">-</span>'}
+                </td>
+                <td>${formatTime(task.created_at)}</td>
+                <td>${formatTime(task.start_time)}</td>
+                <td>${formatTime(task.end_time)}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary" onclick="showTaskDetail('${task.id}')">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                    ${task.status === 'running' ? `
+                        <button class="btn btn-sm btn-outline-warning" onclick="cancelTask('${task.id}')">
+                            <i class="bi bi-stop-circle"></i>
+                        </button>
+                    ` : ''}
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    function renderPagination() {
+        const pagination = document.getElementById('pagination');
+        pagination.innerHTML = '';
+
+        const totalPages = Math.ceil(filteredTasks.length / itemsPerPage);
+        if (totalPages <= 1) return;
+
+        // 上一页
+        const prevLi = document.createElement('li');
+        prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+        prevLi.innerHTML = `<a class="page-link" href="#" onclick="changePage(${currentPage - 1})">上一页</a>`;
+        pagination.appendChild(prevLi);
+
+        // 页码
+        for (let i = 1; i <= totalPages; i++) {
+            const li = document.createElement('li');
+            li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+            li.innerHTML = `<a class="page-link" href="#" onclick="changePage(${i})">${i}</a>`;
+            pagination.appendChild(li);
+        }
+
+        // 下一页
+        const nextLi = document.createElement('li');
+        nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+        nextLi.innerHTML = `<a class="page-link" href="#" onclick="changePage(${currentPage + 1})">下一页</a>`;
+        pagination.appendChild(nextLi);
+    }
+
+    function changePage(page) {
+        const totalPages = Math.ceil(filteredTasks.length / itemsPerPage);
+        if (page >= 1 && page <= totalPages) {
+            currentPage = page;
+            renderTasks();
+            renderPagination();
+        }
+    }
+
+    function showCreateTaskModal() {
+        const modal = new bootstrap.Modal(document.getElementById('createTaskModal'));
+        modal.show();
+    }
+
+    function createTask() {
+        const name = document.getElementById('task-name').value;
+        const taskType = document.getElementById('task-type').value;
+        const description = document.getElementById('task-description').value;
+        const configText = document.getElementById('task-config').value;
+
+        if (!name || !configText) {
+            showNotification('请填写必要字段', 'error');
+            return;
+        }
+
+        try {
+            const config = JSON.parse(configText);
+            
+            const taskData = {
+                name: name,
+                task_type: taskType,
+                description: description,
+                config: config
+            };
+
+            ajaxRequest('/api/tasks', 'POST', taskData, function(err, data) {
+                if (!err && data && data.status === 'success') {
+                    showNotification('任务创建成功', 'success');
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('createTaskModal'));
+                    modal.hide();
+                    document.getElementById('create-task-form').reset();
+                    loadTasks();
+                } else {
+                    showNotification('任务创建失败: ' + (data ? data.message : '未知错误'), 'error');
+                }
+            });
+        } catch (e) {
+            showNotification('配置格式错误: ' + e.message, 'error');
+        }
+    }
+
+    function showTaskDetail(taskId) {
+        currentTaskId = taskId;
+        
+        ajaxRequest(`/api/tasks/${taskId}`, 'GET', null, function(err, data) {
+            if (!err && data && data.task) {
+                const task = data.task;
+                
+                // 填充基本信息
+                document.getElementById('detail-task-id').textContent = task.id;
+                document.getElementById('detail-task-name').textContent = task.name;
+                document.getElementById('detail-task-type').textContent = task.task_type;
+                document.getElementById('detail-task-status').innerHTML = `<span class="${getStatusClass(task.status)}">${getStatusText(task.status)}</span>`;
+                document.getElementById('detail-task-progress').textContent = `${task.current_step}/${task.total_steps}`;
+                document.getElementById('detail-task-created').textContent = formatTime(task.created_at);
+                document.getElementById('detail-task-started').textContent = formatTime(task.start_time);
+                document.getElementById('detail-task-ended').textContent = formatTime(task.end_time);
+                document.getElementById('detail-task-config').textContent = JSON.stringify(task.config, null, 2);
+                
+                // 显示/隐藏取消按钮
+                const cancelBtn = document.getElementById('cancel-task-btn');
+                if (task.status === 'running') {
+                    cancelBtn.style.display = 'inline-block';
+                } else {
+                    cancelBtn.style.display = 'none';
+                }
+                
+                // 加载任务日志
+                loadTaskLogs(taskId);
+                
+                // 显示模态框
+                const modal = new bootstrap.Modal(document.getElementById('taskDetailModal'));
+                modal.show();
+            } else {
+                showNotification('获取任务详情失败', 'error');
+            }
+        });
+    }
+
+    function loadTaskLogs(taskId) {
+        ajaxRequest(`/api/tasks/${taskId}/logs`, 'GET', null, function(err, data) {
+            if (!err && data && data.logs) {
+                const logContainer = document.getElementById('detail-task-logs');
+                logContainer.innerHTML = data.logs.map(log => 
+                    `[${formatTime(log.timestamp)}] ${log.message}`
+                ).join('<br>');
+                logContainer.scrollTop = logContainer.scrollHeight;
+            }
+        });
+    }
+
+    function cancelTask(taskId) {
+        if (!taskId) taskId = currentTaskId;
+        
+        if (confirm('确定要取消这个任务吗？')) {
+            ajaxRequest(`/api/tasks/${taskId}/cancel`, 'POST', null, function(err, data) {
+                if (!err && data && data.status === 'success') {
+                    showNotification('任务已取消', 'success');
+                    loadTasks();
+                    if (currentTaskId === taskId) {
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('taskDetailModal'));
+                        modal.hide();
+                    }
+                } else {
+                    showNotification('取消任务失败: ' + (data ? data.message : '未知错误'), 'error');
+                }
+            });
+        }
+    }
+
+    function refreshTasks() {
+        loadTasks();
+        showNotification('任务列表已刷新', 'success');
+    }
+</script>
+{% endblock %}

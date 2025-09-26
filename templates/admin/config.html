@@ -1,0 +1,334 @@
+{% extends "admin/base.html" %}
+
+{% block title %}系统配置 - 任务管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">系统配置</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="loadConfig()">
+                <i class="bi bi-arrow-clockwise"></i> 刷新
+            </button>
+        </div>
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-success" onclick="saveConfig()">
+                <i class="bi bi-check-circle"></i> 保存配置
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 配置表单 -->
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-gear"></i> 基本配置
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="config-form">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="spreadsheet_id" class="form-label">默认电子表格ID</label>
+                            <input type="text" class="form-control" id="spreadsheet_id" placeholder="请输入Google Sheet的ID">
+                            <div class="form-text">系统默认使用的电子表格ID</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="sheet_name" class="form-label">默认工作表名称</label>
+                            <input type="text" class="form-control" id="sheet_name" placeholder="请输入工作表名称" value="data">
+                            <div class="form-text">系统默认使用的工作表名称</div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="token_file" class="form-label">默认Token文件路径</label>
+                            <input type="text" class="form-control" id="token_file" placeholder="请输入Token文件路径" value="data/token.json">
+                            <div class="form-text">系统默认使用的Token文件路径</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="proxy_url" class="form-label">代理URL (可选)</label>
+                            <input type="text" class="form-control" id="proxy_url" placeholder="请输入代理URL">
+                            <div class="form-text">如果需要使用代理访问Google服务</div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="max_concurrent_tasks" class="form-label">最大并发任务数</label>
+                            <input type="number" class="form-control" id="max_concurrent_tasks" value="5" min="1" max="20">
+                            <div class="form-text">系统同时执行的最大任务数量</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="task_timeout" class="form-label">任务超时时间 (秒)</label>
+                            <input type="number" class="form-control" id="task_timeout" value="3600" min="60" max="86400">
+                            <div class="form-text">单个任务的最大执行时间</div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-info-circle"></i> 配置说明
+                </h5>
+            </div>
+            <div class="card-body">
+                <h6>电子表格配置</h6>
+                <p class="small text-muted">
+                    配置系统默认使用的Google Sheet相关参数，这些参数会在创建新任务时作为默认值使用。
+                </p>
+                
+                <h6>系统参数</h6>
+                <p class="small text-muted">
+                    配置系统运行参数，包括并发任务数和超时时间等。
+                </p>
+                
+                <h6>注意事项</h6>
+                <ul class="small text-muted">
+                    <li>修改配置后需要保存才能生效</li>
+                    <li>某些配置修改后可能需要重启系统</li>
+                    <li>请确保Token文件路径正确且文件存在</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Google Sheet 参数位置配置 -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-table"></i> Google Sheet 参数位置配置
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6>参数位置</h6>
+                        <p class="small text-muted">配置参数在表格中的写入位置</p>
+                        <div id="parameter-positions">
+                            <!-- 参数位置配置将通过JavaScript动态生成 -->
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>检查位置</h6>
+                        <p class="small text-muted">配置检查执行完成状态的位置</p>
+                        <div id="check-positions">
+                            <!-- 检查位置配置将通过JavaScript动态生成 -->
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>结果位置</h6>
+                        <p class="small text-muted">配置获取执行结果的位置</p>
+                        <div id="result-positions">
+                            <!-- 结果位置配置将通过JavaScript动态生成 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 高级配置 -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-sliders"></i> 高级配置
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <label for="advanced-config" class="form-label">高级配置 (JSON格式)</label>
+                        <textarea class="form-control" id="advanced-config" rows="10" placeholder='{"key": "value"}'></textarea>
+                        <div class="form-text">输入JSON格式的高级配置，用于系统扩展功能</div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>配置示例</h6>
+                        <pre class="bg-light p-3 small"><code>{
+  "parameter_positions": {
+    "param1": "B6",
+    "param2": "B7",
+    "param3": "B8"
+  },
+  "check_positions": {
+    "check1": "I6",
+    "check2": "I7",
+    "check3": "I8"
+  },
+  "result_positions": {
+    "result1": "I15",
+    "result2": "I16",
+    "result3": "I17"
+  }
+}</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 页面加载完成后获取配置
+    document.addEventListener('DOMContentLoaded', function() {
+        loadConfig();
+    });
+
+    function loadConfig() {
+        ajaxRequest('/api/config', 'GET', null, function(err, data) {
+            if (!err && data && data.config) {
+                const config = data.config;
+                
+                // 填充基本配置
+                document.getElementById('spreadsheet_id').value = config.spreadsheet_id || '';
+                document.getElementById('sheet_name').value = config.sheet_name || 'data';
+                document.getElementById('token_file').value = config.token_file || 'data/token.json';
+                document.getElementById('proxy_url').value = config.proxy_url || '';
+                document.getElementById('max_concurrent_tasks').value = config.max_concurrent_tasks || 5;
+                document.getElementById('task_timeout').value = config.task_timeout || 3600;
+                
+                // 填充高级配置
+                const advancedConfig = {};
+                if (config.parameter_positions) advancedConfig.parameter_positions = config.parameter_positions;
+                if (config.check_positions) advancedConfig.check_positions = config.check_positions;
+                if (config.result_positions) advancedConfig.result_positions = config.result_positions;
+                
+                document.getElementById('advanced-config').value = JSON.stringify(advancedConfig, null, 2);
+                
+                // 生成位置配置界面
+                generatePositionConfigs(config);
+                
+                showNotification('配置加载成功', 'success');
+            } else {
+                showNotification('加载配置失败', 'error');
+            }
+        });
+    }
+
+    function generatePositionConfigs(config) {
+        // 生成参数位置配置
+        const paramPositions = config.parameter_positions || {};
+        const paramContainer = document.getElementById('parameter-positions');
+        paramContainer.innerHTML = '';
+        
+        for (let i = 1; i <= 6; i++) {
+            const div = document.createElement('div');
+            div.className = 'mb-2';
+            div.innerHTML = `
+                <label class="form-label small">参数${i}</label>
+                <input type="text" class="form-control form-control-sm" 
+                       id="param${i}_pos" value="${paramPositions[`param${i}`] || ''}" 
+                       placeholder="B${5+i}">
+            `;
+            paramContainer.appendChild(div);
+        }
+        
+        // 生成检查位置配置
+        const checkPositions = config.check_positions || {};
+        const checkContainer = document.getElementById('check-positions');
+        checkContainer.innerHTML = '';
+        
+        for (let i = 1; i <= 6; i++) {
+            const div = document.createElement('div');
+            div.className = 'mb-2';
+            div.innerHTML = `
+                <label class="form-label small">检查${i}</label>
+                <input type="text" class="form-control form-control-sm" 
+                       id="check${i}_pos" value="${checkPositions[`check${i}`] || ''}" 
+                       placeholder="I${5+i}">
+            `;
+            checkContainer.appendChild(div);
+        }
+        
+        // 生成结果位置配置
+        const resultPositions = config.result_positions || {};
+        const resultContainer = document.getElementById('result-positions');
+        resultContainer.innerHTML = '';
+        
+        for (let i = 1; i <= 6; i++) {
+            const div = document.createElement('div');
+            div.className = 'mb-2';
+            div.innerHTML = `
+                <label class="form-label small">结果${i}</label>
+                <input type="text" class="form-control form-control-sm" 
+                       id="result${i}_pos" value="${resultPositions[`result${i}`] || ''}" 
+                       placeholder="I${14+i}">
+            `;
+            resultContainer.appendChild(div);
+        }
+    }
+
+    function saveConfig() {
+        try {
+            // 收集基本配置
+            const config = {
+                spreadsheet_id: document.getElementById('spreadsheet_id').value,
+                sheet_name: document.getElementById('sheet_name').value,
+                token_file: document.getElementById('token_file').value,
+                proxy_url: document.getElementById('proxy_url').value,
+                max_concurrent_tasks: parseInt(document.getElementById('max_concurrent_tasks').value),
+                task_timeout: parseInt(document.getElementById('task_timeout').value)
+            };
+            
+            // 收集位置配置
+            const parameter_positions = {};
+            const check_positions = {};
+            const result_positions = {};
+            
+            for (let i = 1; i <= 6; i++) {
+                const paramPos = document.getElementById(`param${i}_pos`).value;
+                const checkPos = document.getElementById(`check${i}_pos`).value;
+                const resultPos = document.getElementById(`result${i}_pos`).value;
+                
+                if (paramPos) parameter_positions[`param${i}`] = paramPos;
+                if (checkPos) check_positions[`check${i}`] = checkPos;
+                if (resultPos) result_positions[`result${i}`] = resultPos;
+            }
+            
+            config.parameter_positions = parameter_positions;
+            config.check_positions = check_positions;
+            config.result_positions = result_positions;
+            
+            // 解析高级配置
+            const advancedConfigText = document.getElementById('advanced-config').value;
+            if (advancedConfigText.trim()) {
+                try {
+                    const advancedConfig = JSON.parse(advancedConfigText);
+                    Object.assign(config, advancedConfig);
+                } catch (e) {
+                    showNotification('高级配置格式错误: ' + e.message, 'error');
+                    return;
+                }
+            }
+            
+            // 发送保存请求
+            ajaxRequest('/api/config', 'POST', config, function(err, data) {
+                if (!err && data && data.status === 'success') {
+                    showNotification('配置保存成功', 'success');
+                } else {
+                    showNotification('保存配置失败: ' + (data ? data.message : '未知错误'), 'error');
+                }
+            });
+            
+        } catch (e) {
+            showNotification('保存配置时出错: ' + e.message, 'error');
+        }
+    }
+</script>
+{% endblock %}

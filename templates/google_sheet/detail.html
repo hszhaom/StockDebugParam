@@ -1,0 +1,278 @@
+{% extends "google_sheet/base.html" %}
+
+{% block title %}任务详情 - Google Sheet 参数批量校验{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="bi bi-info-circle"></i> 任务详情
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>基本信息</h5>
+                        <table class="table table-bordered">
+                            <tr>
+                                <th>任务ID:</th>
+                                <td id="task-id">-</td>
+                            </tr>
+                            <tr>
+                                <th>任务名称:</th>
+                                <td id="task-name">-</td>
+                            </tr>
+                            <tr>
+                                <th>状态:</th>
+                                <td id="task-status">-</td>
+                            </tr>
+                            <tr>
+                                <th>进度:</th>
+                                <td id="task-progress">-</td>
+                            </tr>
+                            <tr>
+                                <th>开始时间:</th>
+                                <td id="start-time">-</td>
+                            </tr>
+                            <tr>
+                                <th>结束时间:</th>
+                                <td id="end-time">-</td>
+                            </tr>
+                            <tr>
+                                <th>错误信息:</th>
+                                <td id="error-message">-</td>
+                            </tr>
+                        </table>
+                        <div class="mt-3">
+                            <button class="btn btn-warning" id="cancel-task-btn" style="display:none;">
+                                <i class="bi bi-stop-circle"></i> 取消任务
+                            </button>
+                            <a href="{{ url_for('google_sheet.index') }}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> 返回首页
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>配置信息</h5>
+                        <div id="config-container">
+                            <!-- 配置信息将通过JavaScript动态填充 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="bi bi-journal-text"></i> 任务日志
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="log-container" id="log-container">
+                    <!-- 日志内容将通过JavaScript动态填充 -->
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="bi bi-list-check"></i> 执行结果
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped" id="results-table">
+                        <thead>
+                            <tr>
+                                <th>序号</th>
+                                <th>参数组合</th>
+                                <th>执行结果</th>
+                                <th>状态</th>
+                                <th>时间</th>
+                            </tr>
+                        </thead>
+                        <tbody id="results-table-body">
+                            <!-- 结果列表将通过JavaScript动态填充 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentTaskId = null;
+    let statusInterval = null;
+
+    // 页面加载完成后获取任务详情
+    document.addEventListener('DOMContentLoaded', function() {
+        currentTaskId = getTaskIdFromUrl();
+        if (currentTaskId) {
+            loadTaskDetail();
+            // 每5秒刷新一次任务详情
+            statusInterval = setInterval(loadTaskDetail, 5000);
+        } else {
+            showNotification('任务ID无效', 'error');
+        }
+    });
+
+    // 页面卸载时清理定时器
+    window.addEventListener('beforeunload', function() {
+        if (statusInterval) {
+            clearInterval(statusInterval);
+        }
+    });
+
+    // 获取URL中的任务ID
+    function getTaskIdFromUrl() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('task_id');
+    }
+
+    // 加载任务详情
+    function loadTaskDetail() {
+        ajaxRequest(`/api/tasks/${currentTaskId}`, 'GET', null, function(err, data) {
+            if (!err && data && data.task) {
+                const task = data.task;
+                
+                // 填充基本信息
+                document.getElementById('task-id').textContent = task.id;
+                document.getElementById('task-name').textContent = task.name;
+                document.getElementById('task-status').innerHTML = `<span class="${getStatusClass(task.status)}">${getStatusText(task.status)}</span>`;
+                document.getElementById('task-progress').textContent = `${task.current_step}/${task.total_steps}`;
+                document.getElementById('start-time').textContent = formatTime(task.start_time);
+                document.getElementById('end-time').textContent = formatTime(task.end_time);
+                document.getElementById('error-message').textContent = task.error_message || '-';
+                
+                // 显示/隐藏取消按钮
+                const cancelBtn = document.getElementById('cancel-task-btn');
+                if (task.status === 'running') {
+                    cancelBtn.style.display = 'inline-block';
+                    cancelBtn.setAttribute('data-task-id', task.id);
+                } else {
+                    cancelBtn.style.display = 'none';
+                }
+                
+                // 填充配置信息
+                loadTaskConfig(task.config);
+                
+                // 加载任务日志
+                loadTaskLogs();
+                
+                // 加载任务结果
+                loadTaskResults();
+                
+                // 更新页面标题
+                document.title = `任务详情 - ${task.name}`;
+            } else {
+                showNotification('获取任务详情失败: ' + (data ? data.message : '未知错误'), 'error');
+            }
+        });
+    }
+
+    // 加载任务配置
+    function loadTaskConfig(config) {
+        const container = document.getElementById('config-container');
+        container.innerHTML = '';
+        
+        if (config) {
+            const configDiv = document.createElement('div');
+            configDiv.innerHTML = `
+                <div class="mb-2">
+                    <strong>电子表格ID:</strong>
+                    <span class="text-muted">${config.spreadsheet_id || '-'}</span>
+                </div>
+                <div class="mb-2">
+                    <strong>工作表名称:</strong>
+                    <span class="text-muted">${config.sheet_name || '-'}</span>
+                </div>
+                <div class="mb-2">
+                    <strong>认证方式:</strong>
+                    <span class="text-muted">${config.token_type || '-'}</span>
+                </div>
+                <div class="mb-2">
+                    <strong>代理URL:</strong>
+                    <span class="text-muted">${config.proxy_url || '无'}</span>
+                </div>
+                <div class="mb-2">
+                    <strong>参数数量:</strong>
+                    <span class="text-muted">${config.parameters ? config.parameters.length : 0}</span>
+                </div>
+            `;
+            container.appendChild(configDiv);
+        }
+    }
+
+    // 加载任务日志
+    function loadTaskLogs() {
+        ajaxRequest(`/api/tasks/${currentTaskId}/logs`, 'GET', null, function(err, data) {
+            if (!err && data && data.logs) {
+                const logContainer = document.getElementById('log-container');
+                logContainer.innerHTML = data.logs.map(log => 
+                    `[${formatTime(log.timestamp)}] ${log.message}`
+                ).join('<br>');
+                // 滚动到底部
+                logContainer.scrollTop = logContainer.scrollHeight;
+            }
+        });
+    }
+
+    // 加载任务结果
+    function loadTaskResults() {
+        ajaxRequest(`/api/tasks/${currentTaskId}/results`, 'GET', null, function(err, data) {
+            if (!err && data && data.results) {
+                const tbody = document.getElementById('results-table-body');
+                tbody.innerHTML = '';
+                
+                data.results.forEach(result => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${result.step_index + 1}</td>
+                        <td>
+                            <pre class="mb-0 small">${JSON.stringify(result.parameters, null, 2)}</pre>
+                        </td>
+                        <td>
+                            <pre class="mb-0 small">${JSON.stringify(result.result, null, 2)}</pre>
+                        </td>
+                        <td>
+                            <span class="badge ${result.success ? 'bg-success' : 'bg-danger'}">
+                                ${result.success ? '成功' : '失败'}
+                            </span>
+                        </td>
+                        <td>${formatTime(result.timestamp)}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+        });
+    }
+
+    // 取消任务
+    function cancelTask() {
+        if (confirm('确定要取消这个任务吗？')) {
+            ajaxRequest(`/api/tasks/${currentTaskId}/cancel`, 'POST', null, function(err, data) {
+                if (!err && data && data.status === 'success') {
+                    showNotification('任务已取消', 'success');
+                    loadTaskDetail(); // 刷新任务详情
+                } else {
+                    showNotification('取消任务失败: ' + (data ? data.message : '未知错误'), 'error');
+                }
+            });
+        }
+    }
+
+    // 绑定取消任务按钮事件
+    document.addEventListener('click', function(e) {
+        if (e.target.id === 'cancel-task-btn') {
+            cancelTask();
+        }
+    });
+</script>
+{% endblock %}

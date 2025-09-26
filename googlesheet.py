@@ -5,7 +5,7 @@ import traceback
 import gspread
 import requests
 from google.oauth2.credentials import Credentials
-from gspread import Cell, HTTPClient
+from gspread import Cell
 from gspread.utils import convert_credentials
 
 from logger import TextLogger

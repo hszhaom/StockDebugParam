@@ -1,0 +1,543 @@
+{% extends "google_sheet/base.html" %}
+
+{% block title %}创建任务 - Google Sheet 参数批量校验{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="bi bi-plus-circle"></i> 创建新任务
+                </h4>
+            </div>
+            <div class="card-body">
+                <form id="parameter-form">
+                    <!-- Google Sheet 配置 -->
+                    <h5 class="mb-3">Google Sheet 配置</h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="spreadsheet" class="form-label">电子表格ID或URL</label>
+                            <input type="text" class="form-control" id="spreadsheet" placeholder="请输入Google Sheet的ID或完整URL" required>
+                            <div class="form-text">支持直接输入ID或完整URL</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="sheet_name" class="form-label">工作表名称</label>
+                            <select class="form-select" id="sheet_name">
+                                <option value="data">data</option>
+                                <option value="data-1Y">data-1Y</option>
+                                <option value="data-3Y">data-3Y</option>
+                                <option value="data-7Y">data-7Y</option>
+                                <option value="自定义">自定义</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3" id="custom-sheet-container" style="display: none;">
+                            <label for="custom_sheet_name" class="form-label">自定义工作表名称</label>
+                            <input type="text" class="form-control" id="custom_sheet_name" placeholder="请输入工作表名称">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="token_type" class="form-label">认证方式</label>
+                            <select class="form-select" id="token_type">
+                                <option value="file">Token文件路径</option>
+                                <option value="json">Token JSON字符串</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3" id="token_file_container">
+                            <label for="token_file" class="form-label">Token文件路径</label>
+                            <input type="text" class="form-control" id="token_file" placeholder="请输入Token文件路径" value="data/token.json">
+                        </div>
+                        <div class="col-md-6 mb-3" id="token_json_container" style="display: none;">
+                            <label for="token_json" class="form-label">Token JSON字符串</label>
+                            <textarea class="form-control" id="token_json" rows="3" placeholder='{"installed": {"client_id": "...", "client_secret": "...", ...}}'></textarea>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="proxy_url" class="form-label">代理URL (可选)</label>
+                            <input type="text" class="form-control" id="proxy_url" placeholder="请输入代理URL">
+                        </div>
+                    </div>
+                    
+                    <!-- 参数配置 -->
+                    <h5 class="mb-3">参数配置</h5>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="param1" class="form-label">参数1 (JSON数组)</label>
+                            <textarea class="form-control parameter-input" id="param1" rows="3" placeholder='["value1", "value2", "value3"]'></textarea>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="param2" class="form-label">参数2 (JSON数组)</label>
+                            <textarea class="form-control parameter-input" id="param2" rows="3" placeholder='["value1", "value2"]'></textarea>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="param3" class="form-label">参数3 (JSON数组)</label>
+                            <textarea class="form-control parameter-input" id="param3" rows="3" placeholder='["value1", "value2"]'></textarea>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="param4" class="form-label">参数4 (JSON数组)</label>
+                            <textarea class="form-control parameter-input" id="param4" rows="3" placeholder='["value1", "value2"]'></textarea>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="param5" class="form-label">参数5 (JSON数组)</label>
+                            <textarea class="form-control parameter-input" id="param5" rows="3" placeholder='["value1", "value2"]'></textarea>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="param6" class="form-label">参数6 (JSON数组)</label>
+                            <textarea class="form-control parameter-input" id="param6" rows="3" placeholder='["value1", "value2"]'></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- 参数组合预览 -->
+                    <div class="alert alert-info" id="combination-info" style="display: none;">
+                        <strong>参数组合信息：</strong>
+                        <span id="combination-count">0</span> 个参数组合将被执行
+                        <div class="mt-2">
+                            <button type="button" class="btn btn-sm btn-outline-info" onclick="showCombinationPreview()">
+                                <i class="bi bi-eye"></i> 预览组合
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('google_sheet.index') }}" class="btn btn-secondary me-md-2">
+                            <i class="bi bi-arrow-left"></i> 返回首页
+                        </a>
+                        <button type="submit" class="btn btn-primary" id="execute-btn">
+                            <i class="bi bi-play-circle"></i> 创建任务并执行
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 参数组合预览模态框 -->
+<div class="modal fade" id="previewModal" tabindex="-1" aria-labelledby="previewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="previewModalLabel">参数组合预览</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="combination-preview" id="combination-preview">
+                    <!-- 组合预览内容 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 第一次执行确认模态框 -->
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmModalLabel">第一次执行结果确认</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>执行参数:</h6>
+                        <pre id="confirm-params" class="bg-light p-3"></pre>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>执行结果:</h6>
+                        <pre id="confirm-results" class="bg-light p-3"></pre>
+                    </div>
+                </div>
+                <div class="alert alert-warning">
+                    请检查第一次执行的结果，确认无误后点击"继续执行"按钮，系统将自动执行剩余的参数组合。
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="cancel-execution">停止执行</button>
+                <button type="button" class="btn btn-primary" id="confirm-continue">继续执行</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 任务执行状态模态框 -->
+<div class="modal fade" id="taskStatusModal" tabindex="-1" aria-labelledby="taskStatusModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="taskStatusModalLabel">任务执行状态</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="progress">
+                    <div class="progress-bar" role="progressbar" id="task-progress-bar" style="width: 0%;">0%</div>
+                </div>
+                <div class="mt-3" id="task-status-message"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                <a href="{{ url_for('google_sheet.detail') }}" class="btn btn-primary" id="view-task-btn" style="display: none;">查看任务详情</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentTaskId = null;
+    let eventSource = null;
+
+    // 页面加载完成后绑定事件
+    document.addEventListener('DOMContentLoaded', function() {
+        bindEvents();
+        calculateCombinations();
+    });
+
+    function bindEvents() {
+        // 工作表名称选择变化事件
+        document.getElementById('sheet_name').addEventListener('change', function() {
+            const customContainer = document.getElementById('custom-sheet-container');
+            if (this.value === '自定义') {
+                customContainer.style.display = 'block';
+            } else {
+                customContainer.style.display = 'none';
+            }
+        });
+
+        // 认证方式选择变化事件
+        document.getElementById('token_type').addEventListener('change', function() {
+            const fileContainer = document.getElementById('token_file_container');
+            const jsonContainer = document.getElementById('token_json_container');
+            if (this.value === 'file') {
+                fileContainer.style.display = 'block';
+                jsonContainer.style.display = 'none';
+            } else {
+                fileContainer.style.display = 'none';
+                jsonContainer.style.display = 'block';
+            }
+        });
+
+        // 参数输入变化事件
+        document.querySelectorAll('textarea[id^="param"]').forEach(function(textarea) {
+            textarea.addEventListener('input', calculateCombinations);
+        });
+
+        // 表单提交事件
+        document.getElementById('parameter-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            submitTask();
+        });
+    }
+
+    // 计算参数组合数量
+    function calculateCombinations() {
+        const param1 = parseJsonArray(document.getElementById('param1').value) || [];
+        const param2 = parseJsonArray(document.getElementById('param2').value) || [];
+        const param3 = parseJsonArray(document.getElementById('param3').value) || [];
+        const param4 = parseJsonArray(document.getElementById('param4').value) || [];
+        const param5 = parseJsonArray(document.getElementById('param5').value) || [];
+        const param6 = parseJsonArray(document.getElementById('param6').value) || [];
+        
+        const count = param1.length * param2.length * param3.length * param4.length * param5.length * param6.length;
+        
+        const infoDiv = document.getElementById('combination-info');
+        const countSpan = document.getElementById('combination-count');
+        
+        if (count > 0) {
+            infoDiv.style.display = 'block';
+            countSpan.textContent = count;
+        } else {
+            infoDiv.style.display = 'none';
+        }
+        
+        return count;
+    }
+
+    // 显示参数组合预览
+    function showCombinationPreview() {
+        const param1 = parseJsonArray(document.getElementById('param1').value) || [];
+        const param2 = parseJsonArray(document.getElementById('param2').value) || [];
+        const param3 = parseJsonArray(document.getElementById('param3').value) || [];
+        const param4 = parseJsonArray(document.getElementById('param4').value) || [];
+        const param5 = parseJsonArray(document.getElementById('param5').value) || [];
+        const param6 = parseJsonArray(document.getElementById('param6').value) || [];
+        
+        const parameters = [param1, param2, param3, param4, param5, param6];
+        const combinations = generateCombinations(parameters);
+        
+        const previewContainer = document.getElementById('combination-preview');
+        previewContainer.innerHTML = '';
+        
+        // 只显示前20个组合
+        const displayCombinations = combinations.slice(0, 20);
+        
+        displayCombinations.forEach((combination, index) => {
+            const div = document.createElement('div');
+            div.className = 'mb-2 p-2 border rounded';
+            div.innerHTML = `
+                <strong>组合 ${index + 1}:</strong>
+                <div class="small text-muted">${combination.join(', ')}</div>
+            `;
+            previewContainer.appendChild(div);
+        });
+        
+        if (combinations.length > 20) {
+            const moreDiv = document.createElement('div');
+            moreDiv.className = 'text-center text-muted';
+            moreDiv.textContent = `... 还有 ${combinations.length - 20} 个组合`;
+            previewContainer.appendChild(moreDiv);
+        }
+        
+        const modal = new bootstrap.Modal(document.getElementById('previewModal'));
+        modal.show();
+    }
+
+    // 生成参数组合
+    function generateCombinations(parameters) {
+        const combinations = [];
+        const param1 = parameters[0] || [];
+        const param2 = parameters[1] || [];
+        const param3 = parameters[2] || [];
+        const param4 = parameters[3] || [];
+        const param5 = parameters[4] || [];
+        const param6 = parameters[5] || [];
+        
+        for (const p1 of param1) {
+            for (const p2 of param2) {
+                for (const p3 of param3) {
+                    for (const p4 of param4) {
+                        for (const p5 of param5) {
+                            for (const p6 of param6) {
+                                combinations.push([p1, p2, p3, p4, p5, p6]);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        return combinations;
+    }
+
+    // 提交任务
+    function submitTask() {
+        // 计算参数组合数量
+        const combinationCount = calculateCombinations();
+        if (combinationCount === 0) {
+            showNotification('请至少输入一个参数', 'error');
+            return;
+        }
+        
+        // 获取Google Sheet配置
+        const spreadsheetInput = document.getElementById('spreadsheet').value;
+        const spreadsheetId = extractSpreadsheetId(spreadsheetInput);
+        const sheetNameSelect = document.getElementById('sheet_name').value;
+        const customSheetName = document.getElementById('custom_sheet_name').value;
+        const sheetName = sheetNameSelect === '自定义' ? customSheetName : sheetNameSelect;
+        const tokenType = document.getElementById('token_type').value;
+        const tokenFile = document.getElementById('token_file').value;
+        const tokenJson = document.getElementById('token_json').value;
+        const proxyUrl = document.getElementById('proxy_url').value;
+        
+        // 验证必要字段
+        if (!spreadsheetId) {
+            showNotification('请输入电子表格ID或URL', 'error');
+            return;
+        }
+        
+        if (sheetNameSelect === '自定义' && !customSheetName) {
+            showNotification('请输入自定义工作表名称', 'error');
+            return;
+        }
+        
+        if (tokenType === 'file' && !tokenFile) {
+            showNotification('请输入Token文件路径', 'error');
+            return;
+        }
+        
+        if (tokenType === 'json' && !tokenJson) {
+            showNotification('请输入Token JSON字符串', 'error');
+            return;
+        }
+        
+        // 获取所有参数
+        const param1 = parseJsonArray(document.getElementById('param1').value);
+        const param2 = parseJsonArray(document.getElementById('param2').value);
+        const param3 = parseJsonArray(document.getElementById('param3').value);
+        const param4 = parseJsonArray(document.getElementById('param4').value);
+        const param5 = parseJsonArray(document.getElementById('param5').value);
+        const param6 = parseJsonArray(document.getElementById('param6').value);
+        
+        // 检查是否有解析错误
+        if (param1 === null || param2 === null || param3 === null || param4 === null || param5 === null || param6 === null) {
+            showNotification('参数格式错误，请检查JSON格式', 'error');
+            return;
+        }
+        
+        // 构造参数列表
+        const parameters = [param1, param2, param3, param4, param5, param6];
+        
+        // 构造任务配置
+        const taskConfig = {
+            spreadsheet_id: spreadsheetId,
+            sheet_name: sheetName,
+            token_type: tokenType,
+            token_file: tokenFile,
+            token_json: tokenJson,
+            proxy_url: proxyUrl || null,
+            parameters: parameters
+        };
+        
+        // 禁用执行按钮
+        const executeBtn = document.getElementById('execute-btn');
+        executeBtn.disabled = true;
+        executeBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> 创建任务中...';
+        
+        // 发送执行请求
+        const taskData = {
+            name: `Google Sheet 任务 - ${new Date().toLocaleString()}`,
+            description: `批量执行 ${combinationCount} 个参数组合`,
+            task_type: 'google_sheet',
+            config: taskConfig
+        };
+        
+        ajaxRequest('/api/tasks', 'POST', taskData, function(err, data) {
+            executeBtn.disabled = false;
+            executeBtn.innerHTML = '<i class="bi bi-play-circle"></i> 创建任务并执行';
+            
+            if (!err && data && data.status === 'success') {
+                currentTaskId = data.task_id;
+                showNotification('任务创建成功', 'success');
+                
+                // 开始监听SSE事件
+                startEventListening(currentTaskId);
+                
+                // 显示任务状态模态框
+                showTaskStatusModal();
+                
+                // 清空表单
+                document.getElementById('parameter-form').reset();
+                // 隐藏组合信息
+                document.getElementById('combination-info').style.display = 'none';
+            } else {
+                showNotification('创建任务失败: ' + (data ? data.message : '未知错误'), 'error');
+            }
+        });
+    }
+
+    // 开始监听SSE事件
+    function startEventListening(taskId) {
+        if (eventSource) {
+            eventSource.close();
+        }
+        
+        eventSource = new EventSource(`/api/tasks/${taskId}/events`);
+        
+        eventSource.onmessage = function(event) {
+            try {
+                const data = JSON.parse(event.data);
+                handleTaskEvent(data);
+            } catch (e) {
+                console.error('解析SSE事件数据失败:', e);
+            }
+        };
+        
+        eventSource.onerror = function(err) {
+            console.error('SSE连接错误:', err);
+        };
+    }
+
+    // 处理任务事件
+    function handleTaskEvent(event) {
+        if (event.type === 'first_execution_complete') {
+            // 显示第一次执行结果确认模态框
+            document.getElementById('confirm-params').textContent = JSON.stringify(event.data.params, null, 2);
+            document.getElementById('confirm-results').textContent = JSON.stringify(event.data.results, null, 2);
+            
+            const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+            modal.show();
+        } else if (event.type === 'heartbeat') {
+            // 心跳包，无需处理
+        } else if (event.type === 'error') {
+            showNotification('任务执行出错: ' + event.data, 'error');
+        }
+    }
+
+    // 确认继续执行
+    document.getElementById('confirm-continue').addEventListener('click', function() {
+        if (currentTaskId) {
+            // 发送确认请求
+            ajaxRequest(`/api/tasks/${currentTaskId}/confirm`, 'POST', {confirmed: true}, function(err, data) {
+                if (!err && data && data.status === 'success') {
+                    // 关闭确认模态框
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('confirmModal'));
+                    modal.hide();
+                    
+                    // 显示任务状态模态框
+                    showTaskStatusModal();
+                } else {
+                    showNotification('确认失败: ' + (data ? data.message : '未知错误'), 'error');
+                }
+            });
+        }
+    });
+
+    // 停止执行
+    document.getElementById('cancel-execution').addEventListener('click', function() {
+        if (currentTaskId) {
+            // 发送确认请求（拒绝）
+            ajaxRequest(`/api/tasks/${currentTaskId}/confirm`, 'POST', {confirmed: false}, function(err, data) {
+                if (!err && data && data.status === 'success') {
+                    // 关闭确认模态框
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('confirmModal'));
+                    modal.hide();
+                    
+                    showNotification('已停止执行任务', 'success');
+                } else {
+                    showNotification('确认失败: ' + (data ? data.message : '未知错误'), 'error');
+                }
+            });
+        }
+    });
+
+    // 显示任务状态模态框
+    function showTaskStatusModal() {
+        const modal = new bootstrap.Modal(document.getElementById('taskStatusModal'));
+        modal.show();
+        
+        // 定时更新任务状态
+        const statusInterval = setInterval(function() {
+            if (currentTaskId) {
+                ajaxRequest(`/api/tasks/${currentTaskId}`, 'GET', null, function(err, data) {
+                    if (!err && data && data.task) {
+                        const task = data.task;
+                        const progressPercent = task.total_steps > 0 ? 
+                            Math.round((task.current_step / task.total_steps) * 100) : 0;
+                        
+                        document.getElementById('task-progress-bar').style.width = progressPercent + '%';
+                        document.getElementById('task-progress-bar').textContent = progressPercent + '%';
+                        document.getElementById('task-status-message').textContent = 
+                            `已执行 ${task.current_step}/${task.total_steps} 个组合`;
+                        
+                        // 如果任务完成，显示查看任务按钮
+                        if (task.status === 'completed' || task.status === 'error') {
+                            clearInterval(statusInterval);
+                            document.getElementById('view-task-btn').style.display = 'inline-block';
+                            document.getElementById('view-task-btn').href = `{{ url_for('google_sheet.detail') }}?task_id=${currentTaskId}`;
+                        }
+                    }
+                });
+            }
+        }, 2000);
+    }
+
+    // 页面卸载时清理资源
+    window.addEventListener('beforeunload', function() {
+        if (eventSource) {
+            eventSource.close();
+        }
+    });
+</script>
+{% endblock %}
