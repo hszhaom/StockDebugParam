@@ -206,8 +206,8 @@
         currentTaskId = getTaskIdFromUrl();
         if (currentTaskId) {
             loadTaskDetail();
-            // 每5秒刷新一次任务详情
-            statusInterval = setInterval(loadTaskDetail, 5000);
+            // 每15秒刷新一次任务详情
+            statusInterval = setInterval(loadTaskDetail, 15000);
         } else {
             showNotification('任务ID无效', 'error');
         }

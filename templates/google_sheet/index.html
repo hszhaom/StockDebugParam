@@ -143,7 +143,7 @@
         // 从URL参数获取当前页面和筛选条件
         loadStateFromUrl();
         loadTasks();
-        setInterval(loadTasks, 5000); // 每5秒刷新一次任务列表
+        setInterval(loadTasks, 15000); // 每15秒刷新一次任务列表
         
         // 监听浏览器前进后退按钮
         window.addEventListener('popstate', function(event) {

@@ -16,6 +16,7 @@ def create_app():
     app = Flask(__name__, 
                 template_folder=str(template_dir), 
                 static_folder=str(static_dir))
+                
     app.config.from_object(Config)
     
     # 初始化扩展
