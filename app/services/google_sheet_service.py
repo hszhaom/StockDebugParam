@@ -4,7 +4,7 @@ import itertools
 from typing import Dict, Any, Optional, List
 from app.models import Task, TaskLog, TaskResult, db
 from app.utils.logger import get_logger
-from googlesheet import GoogleSheet
+from app.services.google_sheet_client import GoogleSheet
 
 logger = get_logger(__name__)
 
