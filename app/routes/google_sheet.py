@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, jsonify
 from app.services.task_manager import task_manager
-from app.services.config_manager import config_manager
+from app.services.config_manager import get_config_manager
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)

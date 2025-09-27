@@ -1,9 +1,11 @@
 from flask import Blueprint, request, jsonify, Response
 import json
+import queue
 from app.services.task_manager import task_manager
 from app.services.config_manager import get_config_manager
 from app.models import Task, TaskLog, db
 from app.utils.logger import get_logger
+from flask import current_app
 
 logger = get_logger(__name__)
 
@@ -74,6 +76,19 @@ def cancel_task(task_id):
         logger.error(f"取消任务失败: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@api_bp.route('/tasks/<task_id>', methods=['DELETE'])
+def delete_task(task_id):
+    """删除任务"""
+    try:
+        success = task_manager.delete_task(task_id)
+        if success:
+            return jsonify({"status": "success", "message": "任务已删除"})
+        else:
+            return jsonify({"status": "error", "message": "删除任务失败"}), 400
+    except Exception as e:
+        logger.error(f"删除任务失败: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 @api_bp.route('/tasks/<task_id>/logs', methods=['GET'])
 def get_task_logs(task_id):
     """获取任务日志"""
@@ -99,28 +114,25 @@ def task_events_stream(task_id):
     """SSE事件流，用于任务状态更新和确认请求"""
     def event_stream():
         if task_id not in task_manager.task_events:
+            yield f"data: {json.dumps({'type': 'error', 'data': 'Task not found'})}\n\n"
             return
         
         event_queue = task_manager.task_events[task_id]
         
         try:
             while True:
-                # 检查任务是否存在
-                task = Task.query.get(task_id)
-                if not task:
-                    break
-                
                 # 从事件队列获取事件
                 try:
                     event = event_queue.get(timeout=1)
                     yield f"data: {json.dumps(event)}\n\n"
-                except:
+                except queue.Empty:
                     # 超时，发送心跳
                     yield f"data: {json.dumps({'type': 'heartbeat'})}\n\n"
                 
-                # 检查任务是否已完成或取消
-                if task.status in ['completed', 'cancelled', 'error']:
+                # 检查事件队列是否还存在（任务管理器会清理完成的队列）
+                if task_id not in task_manager.task_events:
                     break
+                
         except GeneratorExit:
             pass
         except Exception as e:
@@ -206,4 +218,26 @@ def update_google_sheet_config():
             return jsonify({"status": "error", "message": "Google Sheet配置更新失败"}), 500
     except Exception as e:
         logger.error(f"更新Google Sheet配置失败: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@api_bp.route('/logs', methods=['GET'])
+def get_logs():
+    """获取系统日志"""
+    try:
+        import os
+        from app.config import Config
+        
+        log_file = Config.LOG_FILE
+        logs = []
+        
+        if os.path.exists(log_file):
+            with open(log_file, 'r', encoding='utf-8') as f:
+                # 读取最后100行日志
+                lines = f.readlines()
+                logs = lines[-100:] if len(lines) > 100 else lines
+                logs = [line.strip() for line in logs if line.strip()]
+        
+        return jsonify({"status": "success", "logs": logs})
+    except Exception as e:
+        logger.error(f"获取日志失败: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500

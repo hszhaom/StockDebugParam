@@ -13,96 +13,257 @@
             </div>
             <div class="card-body">
                 <form id="parameter-form">
+                    <!-- 任务基本信息 -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title mb-3">
+                                        <i class="bi bi-info-circle"></i> 任务基本信息
+                                    </h5>
+                                    <div class="row">
+                                        <div class="col-md-8 mb-3">
+                                            <label for="task_name" class="form-label">任务名称</label>
+                                            <input type="text" class="form-control" id="task_name" 
+                                                   placeholder="留空将自动生成任务名称" 
+                                                   value="">
+                                            <div class="form-text">为您的任务起一个有意义的名称，留空将自动生成</div>
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label for="task_description" class="form-label">任务描述 (可选)</label>
+                                            <textarea class="form-control" id="task_description" rows="2" 
+                                                      placeholder="描述任务的目的或特殊要求"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <!-- Google Sheet 配置 -->
-                    <h5 class="mb-3">Google Sheet 配置</h5>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="spreadsheet" class="form-label">电子表格ID或URL</label>
-                            <input type="text" class="form-control" id="spreadsheet" placeholder="请输入Google Sheet的ID或完整URL" required>
-                            <div class="form-text">支持直接输入ID或完整URL</div>
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-table"></i> Google Sheet 配置
+                            </h5>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="sheet_name" class="form-label">工作表名称</label>
-                            <select class="form-select" id="sheet_name">
-                                <option value="data">data</option>
-                                <option value="data1y">data1y</option>
-                                <option value="data3y">data3y</option>
-                                <option value="data7y">data7y</option>
-                                <option value="自定义">自定义</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6 mb-3" id="custom-sheet-container" style="display: none;">
-                            <label for="custom_sheet_name" class="form-label">自定义工作表名称</label>
-                            <input type="text" class="form-control" id="custom_sheet_name" placeholder="请输入工作表名称">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="token_type" class="form-label">认证方式</label>
-                            <select class="form-select" id="token_type">
-                                <option value="file">Token文件路径</option>
-                                <option value="json">Token JSON字符串</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6 mb-3" id="token_file_container">
-                            <label for="token_file" class="form-label">Token文件路径</label>
-                            <input type="text" class="form-control" id="token_file" placeholder="请输入Token文件路径" value="data/token.json">
-                        </div>
-                        <div class="col-md-6 mb-3" id="token_json_container" style="display: none;">
-                            <label for="token_json" class="form-label">Token JSON字符串</label>
-                            <textarea class="form-control" id="token_json" rows="3" placeholder='{"installed": {"client_id": "...", "client_secret": "...", ...}}'></textarea>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="proxy_url" class="form-label">代理URL (可选)</label>
-                            <input type="text" class="form-control" id="proxy_url" placeholder="请输入代理URL">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="spreadsheet" class="form-label">
+                                        <i class="bi bi-link-45deg"></i> 电子表格ID或URL
+                                    </label>
+                                    <input type="text" class="form-control" id="spreadsheet" 
+                                           placeholder="请输入Google Sheet的ID或完整URL" required>
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle"></i> 支持直接输入ID或完整URL
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="sheet_name" class="form-label">
+                                        <i class="bi bi-file-spreadsheet"></i> 工作表名称
+                                    </label>
+                                    <select class="form-select" id="sheet_name">
+                                        <option value="data">data</option>
+                                        <option value="data1y">data1y</option>
+                                        <option value="data3y">data3y</option>
+                                        <option value="data7y">data7y</option>
+                                        <option value="自定义">自定义</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3" id="custom-sheet-container" style="display: none;">
+                                    <label for="custom_sheet_name" class="form-label">
+                                        <i class="bi bi-pencil"></i> 自定义工作表名称
+                                    </label>
+                                    <input type="text" class="form-control" id="custom_sheet_name" 
+                                           placeholder="请输入工作表名称">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="token_type" class="form-label">
+                                        <i class="bi bi-shield-lock"></i> 认证方式
+                                    </label>
+                                    <select class="form-select" id="token_type">
+                                        <option value="file">Token文件路径</option>
+                                        <option value="json">Token JSON字符串</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3" id="token_file_container">
+                                    <label for="token_file" class="form-label">
+                                        <i class="bi bi-file-earmark-text"></i> Token文件路径
+                                    </label>
+                                    <input type="text" class="form-control" id="token_file" 
+                                           placeholder="请输入Token文件路径" value="data/token.json">
+                                </div>
+                                <div class="col-md-6 mb-3" id="token_json_container" style="display: none;">
+                                    <label for="token_json" class="form-label">
+                                        <i class="bi bi-code-square"></i> Token JSON字符串
+                                    </label>
+                                    <textarea class="form-control" id="token_json" rows="3" 
+                                              placeholder='{"installed": {"client_id": "...", "client_secret": "...", ...}}'></textarea>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="proxy_url" class="form-label">
+                                        <i class="bi bi-globe"></i> 代理URL (可选)
+                                    </label>
+                                    <input type="text" class="form-control" id="proxy_url" 
+                                           placeholder="请输入代理URL">
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
                     <!-- 参数配置 -->
-                    <h5 class="mb-3">参数配置</h5>
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label for="param1" class="form-label">参数1 (JSON数组)</label>
-                            <textarea class="form-control parameter-input" id="param1" rows="3" placeholder='["value1", "value2", "value3"]'></textarea>
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-gear"></i> 参数配置
+                            </h5>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-primary" onclick="addParameter()">
+                                    <i class="bi bi-plus"></i> 添加参数
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="clearAllParameters()">
+                                    <i class="bi bi-trash"></i> 清空所有
+                                </button>
+                            </div>
                         </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="param2" class="form-label">参数2 (JSON数组)</label>
-                            <textarea class="form-control parameter-input" id="param2" rows="3" placeholder='["value1", "value2"]'></textarea>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="param3" class="form-label">参数3 (JSON数组)</label>
-                            <textarea class="form-control parameter-input" id="param3" rows="3" placeholder='["value1", "value2"]'></textarea>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="param4" class="form-label">参数4 (JSON数组)</label>
-                            <textarea class="form-control parameter-input" id="param4" rows="3" placeholder='["value1", "value2"]'></textarea>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="param5" class="form-label">参数5 (JSON数组)</label>
-                            <textarea class="form-control parameter-input" id="param5" rows="3" placeholder='["value1", "value2"]'></textarea>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="param6" class="form-label">参数6 (JSON数组)</label>
-                            <textarea class="form-control parameter-input" id="param6" rows="3" placeholder='["value1", "value2"]'></textarea>
+                        <div class="card-body">
+                            <div class="row" id="parameters-container">
+                                <div class="col-md-4 mb-3">
+                                    <div class="card border-primary">
+                                        <div class="card-header bg-primary text-white">
+                                            <h6 class="mb-0">
+                                                <i class="bi bi-1-circle"></i> 参数1
+                                                <button type="button" class="btn-close btn-close-white float-end" onclick="removeParameter(1)" style="font-size: 0.7em;"></button>
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <textarea class="form-control parameter-input" id="param1" rows="3" 
+                                                      placeholder='["value1", "value2", "value3"]'></textarea>
+                                            <div class="form-text">JSON数组格式</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="card border-success">
+                                        <div class="card-header bg-success text-white">
+                                            <h6 class="mb-0">
+                                                <i class="bi bi-2-circle"></i> 参数2
+                                                <button type="button" class="btn-close btn-close-white float-end" onclick="removeParameter(2)" style="font-size: 0.7em;"></button>
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <textarea class="form-control parameter-input" id="param2" rows="3" 
+                                                      placeholder='["value1", "value2"]'></textarea>
+                                            <div class="form-text">JSON数组格式</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="card border-info">
+                                        <div class="card-header bg-info text-white">
+                                            <h6 class="mb-0">
+                                                <i class="bi bi-3-circle"></i> 参数3
+                                                <button type="button" class="btn-close btn-close-white float-end" onclick="removeParameter(3)" style="font-size: 0.7em;"></button>
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <textarea class="form-control parameter-input" id="param3" rows="3" 
+                                                      placeholder='["value1", "value2"]'></textarea>
+                                            <div class="form-text">JSON数组格式</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="card border-warning">
+                                        <div class="card-header bg-warning text-dark">
+                                            <h6 class="mb-0">
+                                                <i class="bi bi-4-circle"></i> 参数4
+                                                <button type="button" class="btn-close float-end" onclick="removeParameter(4)" style="font-size: 0.7em;"></button>
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <textarea class="form-control parameter-input" id="param4" rows="3" 
+                                                      placeholder='["value1", "value2"]'></textarea>
+                                            <div class="form-text">JSON数组格式</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="card border-danger">
+                                        <div class="card-header bg-danger text-white">
+                                            <h6 class="mb-0">
+                                                <i class="bi bi-5-circle"></i> 参数5
+                                                <button type="button" class="btn-close btn-close-white float-end" onclick="removeParameter(5)" style="font-size: 0.7em;"></button>
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <textarea class="form-control parameter-input" id="param5" rows="3" 
+                                                      placeholder='["value1", "value2"]'></textarea>
+                                            <div class="form-text">JSON数组格式</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="card border-secondary">
+                                        <div class="card-header bg-secondary text-white">
+                                            <h6 class="mb-0">
+                                                <i class="bi bi-6-circle"></i> 参数6
+                                                <button type="button" class="btn-close btn-close-white float-end" onclick="removeParameter(6)" style="font-size: 0.7em;"></button>
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <textarea class="form-control parameter-input" id="param6" rows="3" 
+                                                      placeholder='["value1", "value2"]'></textarea>
+                                            <div class="form-text">JSON数组格式</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
                     <!-- 参数组合预览 -->
-                    <div class="alert alert-info" id="combination-info" style="display: none;">
-                        <strong>参数组合信息：</strong>
-                        <span id="combination-count">0</span> 个参数组合将被执行
-                        <div class="mt-2">
-                            <button type="button" class="btn btn-sm btn-outline-info" onclick="showCombinationPreview()">
-                                <i class="bi bi-eye"></i> 预览组合
-                            </button>
+                    <div class="card mb-4" id="combination-info" style="display: none;">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-eye"></i> 参数组合预览
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <div class="alert alert-info mb-0">
+                                        <i class="bi bi-info-circle"></i>
+                                        <strong>参数组合信息：</strong>
+                                        <span id="combination-count" class="badge bg-primary ms-2">0</span> 个参数组合将被执行
+                                    </div>
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <button type="button" class="btn btn-outline-info" onclick="showCombinationPreview()">
+                                        <i class="bi bi-eye"></i> 预览组合
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                        <a href="{{ url_for('google_sheet.index') }}" class="btn btn-secondary me-md-2">
-                            <i class="bi bi-arrow-left"></i> 返回首页
-                        </a>
-                        <button type="submit" class="btn btn-primary" id="execute-btn">
-                            <i class="bi bi-play-circle"></i> 创建任务并执行
-                        </button>
+                    
+                    <!-- 操作按钮 -->
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <a href="{{ url_for('google_sheet.index') }}" class="btn btn-secondary me-md-2">
+                                    <i class="bi bi-arrow-left"></i> 返回首页
+                                </a>
+                                <button type="button" class="btn btn-outline-warning me-md-2" onclick="clearSavedFormData()" title="清除保存的表单数据">
+                                    <i class="bi bi-trash"></i> 清除数据
+                                </button>
+                                <button type="submit" class="btn btn-primary btn-lg" id="execute-btn">
+                                    <i class="bi bi-play-circle"></i> 创建任务并执行
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -173,7 +334,10 @@
                 <div class="progress">
                     <div class="progress-bar" role="progressbar" id="task-progress-bar" style="width: 0%;">0%</div>
                 </div>
-                <div class="mt-3" id="task-status-message"></div>
+                <div class="mt-3">
+                    <h6>任务状态</h6>
+                    <div id="task-status-message" class="border rounded p-2 bg-light" style="height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px;"></div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
@@ -192,10 +356,15 @@
     // 页面加载完成后绑定事件
     document.addEventListener('DOMContentLoaded', function() {
         bindEvents();
+        loadSavedFormData();
         calculateCombinations();
     });
 
     function bindEvents() {
+        // 任务名称和描述变化事件
+        document.getElementById('task_name').addEventListener('input', saveFormData);
+        document.getElementById('task_description').addEventListener('input', saveFormData);
+        
         // 工作表名称选择变化事件
         document.getElementById('sheet_name').addEventListener('change', function() {
             const customContainer = document.getElementById('custom-sheet-container');
@@ -204,6 +373,7 @@
             } else {
                 customContainer.style.display = 'none';
             }
+            saveFormData(); // 保存表单数据
         });
 
         // 认证方式选择变化事件
@@ -217,11 +387,28 @@
                 fileContainer.style.display = 'none';
                 jsonContainer.style.display = 'block';
             }
+            saveFormData(); // 保存表单数据
         });
 
         // 参数输入变化事件
         document.querySelectorAll('textarea[id^="param"]').forEach(function(textarea) {
-            textarea.addEventListener('input', calculateCombinations);
+            textarea.addEventListener('input', function() {
+                calculateCombinations();
+                saveFormData(); // 保存表单数据
+            });
+        });
+
+        // 为所有输入字段添加自动保存
+        const inputFields = [
+            'spreadsheet', 'custom_sheet_name', 'token_file', 'token_json', 'proxy_url'
+        ];
+        
+        inputFields.forEach(function(fieldId) {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.addEventListener('input', saveFormData);
+                field.addEventListener('change', saveFormData);
+            }
         });
 
         // 表单提交事件
@@ -321,6 +508,66 @@
         return combinations;
     }
 
+    // 参数管理功能
+    let parameterCount = 6;
+    
+    function addParameter() {
+        parameterCount++;
+        const colors = ['primary', 'success', 'info', 'warning', 'danger', 'secondary'];
+        const color = colors[(parameterCount - 1) % colors.length];
+        const textColor = color === 'warning' ? 'text-dark' : 'text-white';
+        const closeClass = color === 'warning' ? 'btn-close' : 'btn-close btn-close-white';
+        
+        const newParamHtml = `
+            <div class="col-md-4 mb-3">
+                <div class="card border-${color}">
+                    <div class="card-header bg-${color} ${textColor}">
+                        <h6 class="mb-0">
+                            <i class="bi bi-${parameterCount}-circle"></i> 参数${parameterCount}
+                            <button type="button" class="${closeClass} float-end" onclick="removeParameter(${parameterCount})" style="font-size: 0.7em;"></button>
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <textarea class="form-control parameter-input" id="param${parameterCount}" rows="3" 
+                                  placeholder='["value1", "value2"]'></textarea>
+                        <div class="form-text">JSON数组格式</div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('parameters-container').insertAdjacentHTML('beforeend', newParamHtml);
+        
+        // 绑定事件
+        const newTextarea = document.getElementById(`param${parameterCount}`);
+        newTextarea.addEventListener('input', function() {
+            calculateCombinations();
+            saveFormData();
+        });
+        
+        calculateCombinations();
+        showNotification(`已添加参数${parameterCount}`, 'success');
+    }
+    
+    function removeParameter(paramNum) {
+        const paramElement = document.querySelector(`#param${paramNum}`).closest('.col-md-4');
+        if (paramElement) {
+            paramElement.remove();
+            calculateCombinations();
+            showNotification(`已删除参数${paramNum}`, 'info');
+        }
+    }
+    
+    function clearAllParameters() {
+        if (confirm('确定要清空所有参数吗？')) {
+            document.querySelectorAll('textarea[id^="param"]').forEach(textarea => {
+                textarea.value = '';
+            });
+            calculateCombinations();
+            showNotification('已清空所有参数', 'warning');
+        }
+    }
+
     // 提交任务
     function submitTask() {
         // 计算参数组合数量
@@ -395,10 +642,17 @@
         executeBtn.disabled = true;
         executeBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> 创建任务中...';
         
+        // 获取任务名称和描述
+        const taskName = document.getElementById('task_name').value.trim();
+        const taskDescription = document.getElementById('task_description').value.trim();
+        
+        // 如果没有输入任务名称，使用默认生成逻辑
+        const finalTaskName = taskName || `Google Sheet 任务 - ${new Date().toLocaleString()}`;
+        
         // 发送执行请求
         const taskData = {
-            name: `Google Sheet 任务 - ${new Date().toLocaleString()}`,
-            description: `批量执行 ${combinationCount} 个参数组合`,
+            name: finalTaskName,
+            description: taskDescription || `批量执行 ${combinationCount} 个参数组合`,
             task_type: 'google_sheet',
             config: taskConfig
         };
@@ -414,13 +668,15 @@
                 // 开始监听SSE事件
                 startEventListening(currentTaskId);
                 
-                // 显示任务状态模态框
+                // 直接显示任务状态模态框
                 showTaskStatusModal();
                 
                 // 清空表单
                 document.getElementById('parameter-form').reset();
                 // 隐藏组合信息
                 document.getElementById('combination-info').style.display = 'none';
+                // 清除保存的表单数据
+                clearSavedFormData();
             } else {
                 showNotification('创建任务失败: ' + (data ? data.message : '未知错误'), 'error');
             }
@@ -429,15 +685,23 @@
 
     // 开始监听SSE事件
     function startEventListening(taskId) {
+        // 关闭现有连接
         if (eventSource) {
             eventSource.close();
+            eventSource = null;
         }
         
+        console.log(`开始监听任务 ${taskId} 的SSE事件`);
         eventSource = new EventSource(`/api/tasks/${taskId}/events`);
+        
+        eventSource.onopen = function(event) {
+            console.log('SSE连接已建立');
+        };
         
         eventSource.onmessage = function(event) {
             try {
                 const data = JSON.parse(event.data);
+                console.log('收到SSE事件:', data);
                 handleTaskEvent(data);
             } catch (e) {
                 console.error('解析SSE事件数据失败:', e);
@@ -446,22 +710,51 @@
         
         eventSource.onerror = function(err) {
             console.error('SSE连接错误:', err);
+            console.log('SSE连接状态:', eventSource.readyState);
+            
+            // 如果连接关闭，尝试重连
+            if (eventSource.readyState === EventSource.CLOSED) {
+                console.log('SSE连接已关闭，尝试重连...');
+                setTimeout(() => {
+                    if (currentTaskId) {
+                        startEventListening(currentTaskId);
+                    }
+                }, 3000); // 3秒后重连
+            }
         };
     }
 
     // 处理任务事件
     function handleTaskEvent(event) {
         if (event.type === 'first_execution_complete') {
-            // 显示第一次执行结果确认模态框
-            document.getElementById('confirm-params').textContent = JSON.stringify(event.data.params, null, 2);
-            document.getElementById('confirm-results').textContent = JSON.stringify(event.data.results, null, 2);
-            
-            const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
-            modal.show();
+            // 跳过确认，直接显示任务状态模态框
+            console.log('第一次执行完成，直接显示任务状态');
+            showTaskStatusModal();
+        } else if (event.type === 'log_update') {
+            // 处理实时日志更新
+            console.log('收到日志更新:', event.data);
+            // 这里可以实时更新任务状态模态框中的日志
+            updateTaskStatusLog(event.data);
         } else if (event.type === 'heartbeat') {
             // 心跳包，无需处理
         } else if (event.type === 'error') {
             showNotification('任务执行出错: ' + event.data, 'error');
+        }
+    }
+    
+    // 更新任务状态日志
+    function updateTaskStatusLog(logData) {
+        const statusMessage = document.getElementById('task-status-message');
+        if (statusMessage) {
+            const timestamp = new Date(logData.timestamp).toLocaleString('zh-CN');
+            const logEntry = document.createElement('div');
+            logEntry.className = `small ${logData.level === 'error' ? 'text-danger' : 
+                                         logData.level === 'warning' ? 'text-warning' : 'text-info'}`;
+            logEntry.textContent = `[${timestamp}] ${logData.message}`;
+            statusMessage.appendChild(logEntry);
+            
+            // 保持滚动到底部
+            statusMessage.scrollTop = statusMessage.scrollHeight;
         }
     }
 
@@ -507,6 +800,10 @@
         const modal = new bootstrap.Modal(document.getElementById('taskStatusModal'));
         modal.show();
         
+        // 初始化日志显示区域
+        const statusMessage = document.getElementById('task-status-message');
+        statusMessage.innerHTML = '<div class="text-info">正在启动任务...</div>';
+        
         // 定时更新任务状态
         const statusInterval = setInterval(function() {
             if (currentTaskId) {
@@ -518,14 +815,18 @@
                         
                         document.getElementById('task-progress-bar').style.width = progressPercent + '%';
                         document.getElementById('task-progress-bar').textContent = progressPercent + '%';
-                        document.getElementById('task-status-message').textContent = 
-                            `已执行 ${task.current_step}/${task.total_steps} 个组合`;
                         
                         // 如果任务完成，显示查看任务按钮
                         if (task.status === 'completed' || task.status === 'error') {
                             clearInterval(statusInterval);
                             document.getElementById('view-task-btn').style.display = 'inline-block';
                             document.getElementById('view-task-btn').href = `{{ url_for('google_sheet.detail') }}?task_id=${currentTaskId}`;
+                            
+                            // 添加完成信息
+                            const completionInfo = document.createElement('div');
+                            completionInfo.className = task.status === 'completed' ? 'text-success' : 'text-danger';
+                            completionInfo.textContent = `任务${task.status === 'completed' ? '完成' : '失败'}`;
+                            statusMessage.appendChild(completionInfo);
                         }
                     }
                 });
@@ -535,9 +836,110 @@
 
     // 页面卸载时清理资源
     window.addEventListener('beforeunload', function() {
+        console.log('页面即将卸载，清理SSE连接');
         if (eventSource) {
             eventSource.close();
+            eventSource = null;
         }
     });
+    
+    // 页面隐藏时也清理连接
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            console.log('页面隐藏，暂停SSE连接');
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
+        } else {
+            console.log('页面显示，恢复SSE连接');
+            if (currentTaskId && !eventSource) {
+                startEventListening(currentTaskId);
+            }
+        }
+    });
+
+    // 保存表单数据到localStorage
+    function saveFormData() {
+        const formData = {
+            task_name: document.getElementById('task_name').value,
+            task_description: document.getElementById('task_description').value,
+            spreadsheet: document.getElementById('spreadsheet').value,
+            sheet_name: document.getElementById('sheet_name').value,
+            custom_sheet_name: document.getElementById('custom_sheet_name').value,
+            token_type: document.getElementById('token_type').value,
+            token_file: document.getElementById('token_file').value,
+            token_json: document.getElementById('token_json').value,
+            proxy_url: document.getElementById('proxy_url').value,
+            param1: document.getElementById('param1').value,
+            param2: document.getElementById('param2').value,
+            param3: document.getElementById('param3').value,
+            param4: document.getElementById('param4').value,
+            param5: document.getElementById('param5').value,
+            param6: document.getElementById('param6').value
+        };
+        
+        try {
+            localStorage.setItem('google_sheet_form_data', JSON.stringify(formData));
+            // 静默保存，不显示提示
+        } catch (e) {
+            console.warn('无法保存表单数据到localStorage:', e);
+        }
+    }
+
+    // 从localStorage加载表单数据
+    function loadSavedFormData() {
+        try {
+            const savedData = localStorage.getItem('google_sheet_form_data');
+            if (savedData) {
+                const formData = JSON.parse(savedData);
+                
+                // 恢复表单字段
+                if (formData.task_name) document.getElementById('task_name').value = formData.task_name;
+                if (formData.task_description) document.getElementById('task_description').value = formData.task_description;
+                if (formData.spreadsheet) document.getElementById('spreadsheet').value = formData.spreadsheet;
+                if (formData.sheet_name) document.getElementById('sheet_name').value = formData.sheet_name;
+                if (formData.custom_sheet_name) document.getElementById('custom_sheet_name').value = formData.custom_sheet_name;
+                if (formData.token_type) document.getElementById('token_type').value = formData.token_type;
+                if (formData.token_file) document.getElementById('token_file').value = formData.token_file;
+                if (formData.token_json) document.getElementById('token_json').value = formData.token_json;
+                if (formData.proxy_url) document.getElementById('proxy_url').value = formData.proxy_url;
+                if (formData.param1) document.getElementById('param1').value = formData.param1;
+                if (formData.param2) document.getElementById('param2').value = formData.param2;
+                if (formData.param3) document.getElementById('param3').value = formData.param3;
+                if (formData.param4) document.getElementById('param4').value = formData.param4;
+                if (formData.param5) document.getElementById('param5').value = formData.param5;
+                if (formData.param6) document.getElementById('param6').value = formData.param6;
+                
+                // 触发相关事件以更新UI状态
+                document.getElementById('sheet_name').dispatchEvent(new Event('change'));
+                document.getElementById('token_type').dispatchEvent(new Event('change'));
+                
+                console.log('表单数据已恢复');
+                
+                // 显示恢复状态
+                showNotification('表单数据已恢复', 'info');
+            }
+        } catch (e) {
+            console.warn('无法从localStorage加载表单数据:', e);
+        }
+    }
+
+    // 清除保存的表单数据
+    function clearSavedFormData() {
+        try {
+            localStorage.removeItem('google_sheet_form_data');
+            // 重置表单
+            document.getElementById('parameter-form').reset();
+            // 隐藏组合信息
+            document.getElementById('combination-info').style.display = 'none';
+            // 重新计算组合数量
+            calculateCombinations();
+            console.log('已清除保存的表单数据');
+            showNotification('已清除保存的表单数据', 'success');
+        } catch (e) {
+            console.warn('无法清除localStorage数据:', e);
+        }
+    }
 </script>
 {% endblock %}
