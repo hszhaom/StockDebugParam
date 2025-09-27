@@ -1,74 +1,71 @@
 import os
 import time
 import traceback
+from typing import Optional
 
 import gspread
-import requests
 from google.oauth2.credentials import Credentials
 from gspread import Cell
-from gspread.utils import convert_credentials
+from app.utils.logger import get_logger
 
-from logger import TextLogger
-import httpx
-from typing import Optional
-from google.auth.transport.requests import Request, AuthorizedSession
-from gspread import Client
+logger = get_logger(__name__)
 
 class GoogleSheet:
-    def __init__(self, spreadsheet_id, sheecode='data',token_file="data/token.json",proxy_url=None):
-        # google 验证
-        # SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-        # creds = Credentials.from_authorized_user_file(token_file, SCOPES)
-        # client = gspread.authorize(creds)
-        # # 页面功能
-        # self.sheet = client.open_by_key(spreadsheet_id)
-        # self.worksheet = self.sheet.worksheet(sheecode)  # 指定工作表名称 data control
-
-
+    """Google Sheet客户端类"""
+    
+    def __init__(self, spreadsheet_id, sheet_name='data', token_file="data/token.json", proxy_url=None):
+        """
+        初始化Google Sheet连接
+        
+        Args:
+            spreadsheet_id: 电子表格ID
+            sheet_name: 工作表名称，默认为'data'
+            token_file: 认证文件路径
+            proxy_url: 代理URL
+        """
         SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
         try:
-
             # 加载凭证
             creds = Credentials.from_authorized_user_file(token_file, scopes=SCOPES)
 
-            # # 确保凭证有效（处理令牌刷新）
-            # if creds.expired and creds.refresh_token:
-            #     creds.refresh(Request())
-
-            client = gspread.authorize(credentials = creds)
+            client = gspread.authorize(credentials=creds)
             if proxy_url:
-                TextLogger.info(f"使用代理：{proxy_url}")
+                logger.info(f"使用代理：{proxy_url}")
                 # 设置代理环境变量
                 os.environ['HTTP_PROXY'] = proxy_url
-                os.environ['HTTPS_PROXY'] =  proxy_url
+                os.environ['HTTPS_PROXY'] = proxy_url
 
             # 打开电子表格和工作表
             self.sheet = client.open_by_key(spreadsheet_id)
-            self.worksheet = self.sheet.worksheet(sheecode)
+            self.worksheet = self.sheet.worksheet(sheet_name)
+            logger.info(f"Google Sheet连接成功: {spreadsheet_id}/{sheet_name}")
+            
         except Exception as e:
-            TextLogger.info(f'打开表格错误。错误内容：{traceback.format_exc()}')
+            logger.error(f'打开表格错误。错误内容：{traceback.format_exc()}')
             raise e
 
-    def get(self,name):
-        return getattr(self,name)
+    def get(self, name):
+        """获取属性"""
+        return getattr(self, name)
 
-    def get_row(self,row):
+    def get_row(self, row):
+        """获取指定行的值"""
         return self.worksheet.row_values(row)
 
     def get_last_row(self, col_letter):
+        """获取指定列的最后非空行"""
         try:
-            """通过反向遍历快速定位最后非空行"""
             col_data = self.worksheet.col_values(
                 ord(col_letter) - ord('A') + 1)  # 字母转数字列号
             return len(col_data) if col_data else 0
         except Exception as e:
-            TextLogger.info(f'获取最后非空行错误。错误内容：{str(e)}')
+            logger.error(f'获取最后非空行错误。错误内容：{str(e)}')
             return -1
 
     @staticmethod
     def col_letter_to_num(col_letter):
-        # 将Excel列字母转换为数字
+        """将Excel列字母转换为数字"""
         num = 0
         for c in col_letter:
             num = num * 26 + (ord(c) - ord('A') + 1)
@@ -76,7 +73,7 @@ class GoogleSheet:
 
     @staticmethod
     def num_to_col_letter(num):
-        # 将数字转换为Excel列字母
+        """将数字转换为Excel列字母"""
         if num <= 0:
             return ""
         result = ""
@@ -86,12 +83,17 @@ class GoogleSheet:
             num //= 26
         return result
 
-    def calculate_stock_column(self, start_cell, stock_index,is_number=False):
+    def calculate_stock_column(self, start_cell, stock_index, is_number=False):
         """
         动态计算股票在表格中的列位置
-        :param start_cell: 起始单元格，例如'I1'
-        :param stock_index: 股票序号（从1开始）
-        :return: (当前股票列, 后一列) 例如 ('M1', 'N1')
+        
+        Args:
+            start_cell: 起始单元格，例如'I1'
+            stock_index: 股票序号（从1开始）
+            is_number: 是否返回数字格式
+            
+        Returns:
+            (当前股票列, 后一列) 例如 ('M1', 'N1')
         """
         # 解析起始单元格
         start_col_letter = ''.join(filter(str.isalpha, start_cell))
@@ -113,43 +115,39 @@ class GoogleSheet:
         next_col_num = current_col_num + 1
         next_col_letter = self.num_to_col_letter(next_col_num)
 
-        # # 调试信息
-        # TextLogger.info(
-        #     f"stock_index: {stock_index}, start_col_num: {start_col_num}, base_col_offset: {base_col_offset}, current_col_num: {current_col_num}, current_col_letter: {current_col_letter}")
         if is_number:
-            return current_col_num,next_col_num
+            return current_col_num, next_col_num
         return f"{current_col_letter}{start_row}", f"{next_col_letter}{start_row}"
 
     def update_row(self, sheet_row, sheet_value):
+        """更新单行数据"""
         try:
-            pass
-            TextLogger.info(f"写入：sheet_rows：{sheet_row}, sheet_values：{sheet_value}")
+            logger.info(f"写入：sheet_rows：{sheet_row}, sheet_values：{sheet_value}")
             self.worksheet.update(sheet_row, [[sheet_value]], value_input_option="USER_ENTERED")
         except Exception as e:
-            TextLogger.info(f'设置表格{sheet_row},值:{sheet_value}错误。错误内容：{str(e)}')
+            logger.error(f'设置表格{sheet_row},值:{sheet_value}错误。错误内容：{str(e)}')
             return f'设置表格{sheet_row},值:{sheet_value}错误。错误内容：{str(e)}'
 
-
     def clear_row(self, sheet_rows):
+        """清除指定行"""
         self.worksheet.range(sheet_rows).clear()
 
-
     def update_rows(self, sheet_rows, sheet_values):
+        """批量更新行数据"""
         try:
-            pass
-            TextLogger.info(f"批量写入：sheet_rows：{sheet_rows}, sheet_values：{sheet_values}")
+            logger.info(f"批量写入：sheet_rows：{sheet_rows}, sheet_values：{sheet_values}")
             self.worksheet.update(sheet_rows, sheet_values, value_input_option="USER_ENTERED")
         except Exception as e:
-            TextLogger.info(f'设置表格{sheet_rows},值:{sheet_values}错误。错误内容：{str(e)}')
+            logger.error(f'设置表格{sheet_rows},值:{sheet_values}错误。错误内容：{str(e)}')
             return f'设置表格{sheet_rows},值:{sheet_values}错误。错误内容：{str(e)}'
 
     def update_jumped_cells(self, cell_updates):
         """
         更新跳跃的单元格
 
-        参数:
-        cell_updates: 字典，格式为 {单元格地址: 新值}
-        例如: {"A1": "姓名", "I1": "年龄", "N1": "城市", "AI1": "职业"}
+        Args:
+            cell_updates: 字典，格式为 {单元格地址: 新值}
+            例如: {"A1": "姓名", "I1": "年龄", "N1": "城市", "AI1": "职业"}
         """
         if not self.worksheet:
             raise Exception("请先选择工作表")
@@ -166,13 +164,14 @@ class GoogleSheet:
             return self.worksheet.update_cells(cells)
 
         except Exception as e:
-            TextLogger.info(f"更新跳跃单元格失败: {e}")
+            logger.error(f"更新跳跃单元格失败: {e}")
 
-    def get_cell(self,cell_ref):
+    def get_cell(self, cell_ref):
+        """获取指定单元格的值"""
         return self.worksheet.get(cell_ref)[0][0]
 
-
     def get_trade_count_with_retry(self, cell_ref, max_retries=10, delay=30):
+        """带重试机制获取交易数量"""
         retry_count = 0
         while retry_count < max_retries:
             try:
@@ -180,10 +179,10 @@ class GoogleSheet:
                 if trade_count != '#DIV/0!' and trade_count.find("target") == -1:
                     return trade_count
             except Exception as e:
-                TextLogger.info(f'获取交易数量出错: {str(e)}')
-            TextLogger.info(f'重试中，已尝试{retry_count}次')
+                logger.error(f'获取交易数量出错: {str(e)}')
+            logger.info(f'重试中，已尝试{retry_count}次')
             retry_count += 1
             if retry_count < max_retries:
                 time.sleep(delay)
-        TextLogger.info(f'多次尝试后，仍无法获取有效的交易数量，返回0')
+        logger.warning(f'多次尝试后，仍无法获取有效的交易数量，返回0')
         return '0'
