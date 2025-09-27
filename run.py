@@ -36,11 +36,10 @@ def init_config():
         'token_file': 'data/token.json',
         'proxy_url': None,
         'max_concurrent_tasks': 5,
-        'task_timeout': 3600,
+        'task_timeout': 36000,
         'parameter_positions': {
             'param1': 'B6',
             'param2': 'B7',
-            'param3': 'B8',
             'param4': 'B9',
             'param5': 'B10',
             'param6': 'B11'
@@ -48,7 +47,6 @@ def init_config():
         'check_positions': {
             'check1': 'I6',
             'check2': 'I7',
-            'check3': 'I8',
             'check4': 'I9',
             'check5': 'I10',
             'check6': 'I11'

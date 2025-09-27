@@ -5,59 +5,119 @@
 {% block content %}
 <div class="row">
     <div class="col-md-12">
-        <div class="card">
+        <!-- 任务概览卡片 -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="card-title mb-0">
+                    <i class="bi bi-info-circle"></i> 任务概览
+                </h4>
+                <div class="btn-group" role="group">
+                    <button class="btn btn-warning btn-sm" id="cancel-task-btn" style="display:none;">
+                        <i class="bi bi-stop-circle"></i> 停止任务
+                    </button>
+                    <a href="{{ url_for('google_sheet.index') }}" class="btn btn-secondary btn-sm">
+                        <i class="bi bi-arrow-left"></i> 返回首页
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title text-muted mb-2">任务信息</h6>
+                                        <div class="mb-2">
+                                            <strong>任务名称:</strong>
+                                            <div class="text-primary" id="task-name">-</div>
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>任务ID:</strong>
+                                            <div class="text-muted small" id="task-id">-</div>
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>状态:</strong>
+                                            <div id="task-status">-</div>
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>进度:</strong>
+                                            <div id="task-progress">-</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title text-muted mb-2">时间信息</h6>
+                                        <div class="mb-2">
+                                            <strong>开始时间:</strong>
+                                            <div class="text-success" id="start-time">-</div>
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>结束时间:</strong>
+                                            <div class="text-info" id="end-time">-</div>
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>执行时长:</strong>
+                                            <div class="text-warning" id="execution-duration">-</div>
+                                        </div>
+                                        <div class="mb-2" id="error-info" style="display: none;">
+                                            <strong>错误信息:</strong>
+                                            <div class="text-danger" id="error-message">-</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">执行统计</h5>
+                                <div class="row text-center">
+                                    <div class="col-6">
+                                        <h3 id="success-count">0</h3>
+                                        <small>成功</small>
+                                    </div>
+                                    <div class="col-6">
+                                        <h3 id="failed-count">0</h3>
+                                        <small>失败</small>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-success" id="success-progress" style="width: 0%"></div>
+                                    </div>
+                                    <small class="mt-1 d-block">成功率</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 配置信息卡片 -->
+        <div class="card mb-4">
             <div class="card-header">
                 <h4 class="card-title mb-0">
-                    <i class="bi bi-info-circle"></i> 任务详情
+                    <i class="bi bi-gear"></i> 配置信息
                 </h4>
             </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
-                        <h5>基本信息</h5>
-                        <table class="table table-bordered">
-                            <tr>
-                                <th>任务ID:</th>
-                                <td id="task-id">-</td>
-                            </tr>
-                            <tr>
-                                <th>任务名称:</th>
-                                <td id="task-name">-</td>
-                            </tr>
-                            <tr>
-                                <th>状态:</th>
-                                <td id="task-status">-</td>
-                            </tr>
-                            <tr>
-                                <th>进度:</th>
-                                <td id="task-progress">-</td>
-                            </tr>
-                            <tr>
-                                <th>开始时间:</th>
-                                <td id="start-time">-</td>
-                            </tr>
-                            <tr>
-                                <th>结束时间:</th>
-                                <td id="end-time">-</td>
-                            </tr>
-                            <tr>
-                                <th>错误信息:</th>
-                                <td id="error-message">-</td>
-                            </tr>
-                        </table>
-                        <div class="mt-3">
-                            <button class="btn btn-warning" id="cancel-task-btn" style="display:none;">
-                                <i class="bi bi-stop-circle"></i> 取消任务
-                            </button>
-                            <a href="{{ url_for('google_sheet.index') }}" class="btn btn-secondary">
-                                <i class="bi bi-arrow-left"></i> 返回首页
-                            </a>
+                        <h6 class="text-muted mb-3">Google Sheet 配置</h6>
+                        <div id="config-container">
+                            <!-- 配置信息将通过JavaScript动态填充 -->
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <h5>配置信息</h5>
-                        <div id="config-container">
-                            <!-- 配置信息将通过JavaScript动态填充 -->
+                        <h6 class="text-muted mb-3">参数配置</h6>
+                        <div id="parameters-container">
+                            <!-- 参数信息将通过JavaScript动态填充 -->
                         </div>
                     </div>
                 </div>
@@ -77,22 +137,39 @@
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-header">
+        <!-- 执行结果卡片 -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h4 class="card-title mb-0">
                     <i class="bi bi-list-check"></i> 执行结果
                 </h4>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="refreshResults()">
+                        <i class="bi bi-arrow-clockwise"></i> 刷新
+                    </button>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                            <i class="bi bi-funnel"></i> 筛选
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="filterResults('all')">全部结果</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="filterResults('success')">成功</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="filterResults('failed')">失败</a></li>
+                        </ul>
+                    </div>
+                </div>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-striped" id="results-table">
-                        <thead>
+                    <table class="table table-hover" id="results-table">
+                        <thead class="table-dark">
                             <tr>
                                 <th>序号</th>
                                 <th>参数组合</th>
                                 <th>执行结果</th>
                                 <th>状态</th>
-                                <th>时间</th>
+                                <th>执行时间</th>
+                                <th>耗时</th>
                             </tr>
                         </thead>
                         <tbody id="results-table-body">
@@ -100,6 +177,13 @@
                         </tbody>
                     </table>
                 </div>
+                
+                <!-- 分页控件 -->
+                <nav aria-label="结果分页">
+                    <ul class="pagination justify-content-center" id="results-pagination">
+                        <!-- 分页按钮将通过JavaScript动态生成 -->
+                    </ul>
+                </nav>
             </div>
         </div>
     </div>
@@ -108,8 +192,14 @@
 
 {% block scripts %}
 <script>
+    // 全局变量
     let currentTaskId = null;
     let statusInterval = null;
+    let allResults = [];
+    let filteredResults = [];
+    let currentResultsPage = 1;
+    let resultsPerPage = 10;
+    let currentResultsFilter = 'all';
 
     // 页面加载完成后获取任务详情
     document.addEventListener('DOMContentLoaded', function() {
@@ -145,11 +235,37 @@
                 // 填充基本信息
                 document.getElementById('task-id').textContent = task.id;
                 document.getElementById('task-name').textContent = task.name;
-                document.getElementById('task-status').innerHTML = `<span class="${getStatusClass(task.status)}">${getStatusText(task.status)}</span>`;
-                document.getElementById('task-progress').textContent = `${task.current_step}/${task.total_steps}`;
+                document.getElementById('task-status').innerHTML = `<span class="badge ${getStatusClass(task.status)}">${getStatusText(task.status)}</span>`;
+                
+                // 更新进度显示
+                const progressPercent = task.total_steps > 0 ? Math.round((task.current_step / task.total_steps) * 100) : 0;
+                document.getElementById('task-progress').innerHTML = `
+                    <div class="progress" style="height: 20px;">
+                        <div class="progress-bar ${getProgressBarClass(task.status)}" role="progressbar" 
+                             style="width: ${progressPercent}%">
+                            ${task.current_step}/${task.total_steps} (${progressPercent}%)
+                        </div>
+                    </div>
+                `;
+                
+                // 更新时间信息
                 document.getElementById('start-time').textContent = formatTime(task.start_time);
                 document.getElementById('end-time').textContent = formatTime(task.end_time);
-                document.getElementById('error-message').textContent = task.error_message || '-';
+                
+                // 计算执行时长
+                const startTime = new Date(task.start_time);
+                const endTime = task.end_time ? new Date(task.end_time) : new Date();
+                const duration = Math.round((endTime - startTime) / 1000);
+                document.getElementById('execution-duration').textContent = formatDuration(duration);
+                
+                // 显示/隐藏错误信息
+                const errorInfo = document.getElementById('error-info');
+                if (task.error_message) {
+                    document.getElementById('error-message').textContent = task.error_message;
+                    errorInfo.style.display = 'block';
+                } else {
+                    errorInfo.style.display = 'none';
+                }
                 
                 // 显示/隐藏取消按钮
                 const cancelBtn = document.getElementById('cancel-task-btn');
@@ -162,6 +278,7 @@
                 
                 // 填充配置信息
                 loadTaskConfig(task.config);
+                loadTaskParameters(task.config);
                 
                 // 加载任务日志
                 loadTaskLogs();
@@ -171,6 +288,13 @@
                 
                 // 更新页面标题
                 document.title = `任务详情 - ${task.name}`;
+                
+                // 如果任务还在运行，启动定时刷新
+                if (task.status === 'running') {
+                    startAutoRefresh();
+                } else {
+                    stopAutoRefresh();
+                }
             } else {
                 showNotification('获取任务详情失败: ' + (data ? data.message : '未知错误'), 'error');
             }
@@ -183,75 +307,227 @@
         container.innerHTML = '';
         
         if (config) {
-            const configDiv = document.createElement('div');
-            configDiv.innerHTML = `
-                <div class="mb-2">
-                    <strong>电子表格ID:</strong>
-                    <span class="text-muted">${config.spreadsheet_id || '-'}</span>
-                </div>
-                <div class="mb-2">
-                    <strong>工作表名称:</strong>
-                    <span class="text-muted">${config.sheet_name || '-'}</span>
-                </div>
-                <div class="mb-2">
-                    <strong>认证方式:</strong>
-                    <span class="text-muted">${config.token_type || '-'}</span>
-                </div>
-                <div class="mb-2">
-                    <strong>代理URL:</strong>
-                    <span class="text-muted">${config.proxy_url || '无'}</span>
-                </div>
-                <div class="mb-2">
-                    <strong>参数数量:</strong>
-                    <span class="text-muted">${config.parameters ? config.parameters.length : 0}</span>
-                </div>
-            `;
-            container.appendChild(configDiv);
+            const configItems = [
+                { label: '电子表格ID', value: config.spreadsheet_id || '-', icon: 'bi-link-45deg' },
+                { label: '工作表名称', value: config.sheet_name || '-', icon: 'bi-file-spreadsheet' },
+                { label: '认证方式', value: config.token_type || '-', icon: 'bi-shield-lock' },
+                { label: '代理URL', value: config.proxy_url || '无', icon: 'bi-globe' },
+                { label: '参数数量', value: config.parameters ? config.parameters.length : 0, icon: 'bi-list-ul' }
+            ];
+            
+            configItems.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'mb-2 d-flex align-items-center';
+                itemDiv.innerHTML = `
+                    <i class="${item.icon} text-muted me-2"></i>
+                    <strong class="me-2">${item.label}:</strong>
+                    <span class="text-muted">${item.value}</span>
+                `;
+                container.appendChild(itemDiv);
+            });
+        } else {
+            container.innerHTML = '<div class="text-muted">无配置信息</div>';
         }
     }
 
     // 加载任务日志
     function loadTaskLogs() {
+        console.log('开始加载任务日志...');
         ajaxRequest(`/api/tasks/${currentTaskId}/logs`, 'GET', null, function(err, data) {
+            console.log('日志API响应:', err, data);
             if (!err && data && data.logs) {
                 const logContainer = document.getElementById('log-container');
-                logContainer.innerHTML = data.logs.map(log => 
-                    `[${formatTime(log.timestamp)}] ${log.message}`
-                ).join('<br>');
-                // 滚动到底部
+                console.log('找到日志容器:', logContainer);
+                console.log('日志数量:', data.logs.length);
+                
+                if (data.logs.length > 0) {
+                    // 保存当前滚动位置
+                    const wasAtBottom = logContainer.scrollTop + logContainer.clientHeight >= logContainer.scrollHeight - 5;
+                    
+                    // 更新日志内容
+                    logContainer.innerHTML = data.logs.map(log => {
+                        const level = log.level || 'info';
+                        const levelClass = level === 'error' ? 'text-danger' : 
+                                         level === 'warning' ? 'text-warning' : 
+                                         level === 'info' ? 'text-info' : 'text-light';
+                        return `<div class="${levelClass}">[${formatTime(log.timestamp)}] ${log.message}</div>`;
+                    }).join('');
+                    
+                    // 如果之前在底部，保持滚动到底部
+                    if (wasAtBottom) {
                 logContainer.scrollTop = logContainer.scrollHeight;
+                    }
+                    
+                    console.log('日志已显示');
+                } else {
+                    logContainer.innerHTML = '<div class="text-muted">暂无日志</div>';
+                    console.log('没有日志数据');
+                }
+            } else {
+                console.error('加载日志失败:', err, data);
+                const logContainer = document.getElementById('log-container');
+                logContainer.innerHTML = '<div class="text-danger">加载日志失败</div>';
             }
         });
+    }
+
+    // 加载任务参数
+    function loadTaskParameters(config) {
+        const container = document.getElementById('parameters-container');
+        container.innerHTML = '';
+        
+        if (config && config.parameters) {
+            config.parameters.forEach((param, index) => {
+                const paramDiv = document.createElement('div');
+                paramDiv.className = 'mb-2';
+                paramDiv.innerHTML = `
+                    <div class="d-flex align-items-center">
+                        <span class="badge bg-primary me-2">参数${index + 1}</span>
+                        <code class="text-dark">${JSON.stringify(param)}</code>
+                    </div>
+                `;
+                container.appendChild(paramDiv);
+            });
+        } else {
+            container.innerHTML = '<div class="text-muted">无参数配置</div>';
+        }
     }
 
     // 加载任务结果
     function loadTaskResults() {
         ajaxRequest(`/api/tasks/${currentTaskId}/results`, 'GET', null, function(err, data) {
             if (!err && data && data.results) {
+                allResults = data.results;
+                applyResultsFilter();
+                updateResultsStatistics();
+                renderResults();
+            }
+        });
+    }
+
+    // 应用结果筛选
+    function applyResultsFilter() {
+        if (currentResultsFilter === 'all') {
+            filteredResults = allResults;
+        } else if (currentResultsFilter === 'success') {
+            filteredResults = allResults.filter(result => result.success);
+        } else if (currentResultsFilter === 'failed') {
+            filteredResults = allResults.filter(result => !result.success);
+        }
+        currentResultsPage = 1; // 重置到第一页
+    }
+
+    // 筛选结果
+    function filterResults(filter) {
+        currentResultsFilter = filter;
+        applyResultsFilter();
+        renderResults();
+    }
+
+    // 渲染结果列表
+    function renderResults() {
                 const tbody = document.getElementById('results-table-body');
                 tbody.innerHTML = '';
                 
-                data.results.forEach(result => {
+        // 计算分页
+        const startIndex = (currentResultsPage - 1) * resultsPerPage;
+        const endIndex = startIndex + resultsPerPage;
+        const pageResults = filteredResults.slice(startIndex, endIndex);
+        
+        // 填充结果列表
+        pageResults.forEach(result => {
                     const row = document.createElement('tr');
+            const executionTime = result.result && result.result.execution_time ? result.result.execution_time : '-';
                     row.innerHTML = `
                         <td>${result.step_index + 1}</td>
                         <td>
-                            <pre class="mb-0 small">${JSON.stringify(result.parameters, null, 2)}</pre>
+                    <div class="small">
+                        ${result.parameters.map((param, i) => 
+                            `<span class="badge bg-secondary me-1">参数${i+1}: ${param}</span>`
+                        ).join('<br>')}
+                    </div>
                         </td>
                         <td>
-                            <pre class="mb-0 small">${JSON.stringify(result.result, null, 2)}</pre>
+                    <div class="small">
+                        ${result.result ? Object.entries(result.result).map(([key, value]) => 
+                            `<strong>${key}:</strong> ${value}`
+                        ).join('<br>') : '-'}
+                    </div>
                         </td>
                         <td>
                             <span class="badge ${result.success ? 'bg-success' : 'bg-danger'}">
+                        <i class="bi ${result.success ? 'bi-check-circle' : 'bi-x-circle'}"></i>
                                 ${result.success ? '成功' : '失败'}
                             </span>
                         </td>
                         <td>${formatTime(result.timestamp)}</td>
+                <td>${executionTime}</td>
                     `;
                     tbody.appendChild(row);
                 });
-            }
-        });
+        
+        // 渲染分页
+        renderResultsPagination();
+    }
+
+    // 渲染结果分页
+    function renderResultsPagination() {
+        const pagination = document.getElementById('results-pagination');
+        pagination.innerHTML = '';
+        
+        const totalPages = Math.ceil(filteredResults.length / resultsPerPage);
+        
+        if (totalPages <= 1) return;
+        
+        // 上一页
+        const prevLi = document.createElement('li');
+        prevLi.className = `page-item ${currentResultsPage === 1 ? 'disabled' : ''}`;
+        prevLi.innerHTML = `<a class="page-link" href="#" onclick="changeResultsPage(${currentResultsPage - 1})">上一页</a>`;
+        pagination.appendChild(prevLi);
+        
+        // 页码
+        const startPage = Math.max(1, currentResultsPage - 2);
+        const endPage = Math.min(totalPages, currentResultsPage + 2);
+        
+        for (let i = startPage; i <= endPage; i++) {
+            const li = document.createElement('li');
+            li.className = `page-item ${i === currentResultsPage ? 'active' : ''}`;
+            li.innerHTML = `<a class="page-link" href="#" onclick="changeResultsPage(${i})">${i}</a>`;
+            pagination.appendChild(li);
+        }
+        
+        // 下一页
+        const nextLi = document.createElement('li');
+        nextLi.className = `page-item ${currentResultsPage === totalPages ? 'disabled' : ''}`;
+        nextLi.innerHTML = `<a class="page-link" href="#" onclick="changeResultsPage(${currentResultsPage + 1})">下一页</a>`;
+        pagination.appendChild(nextLi);
+    }
+
+    // 切换结果页面
+    function changeResultsPage(page) {
+        const totalPages = Math.ceil(filteredResults.length / resultsPerPage);
+        if (page >= 1 && page <= totalPages) {
+            currentResultsPage = page;
+            renderResults();
+        }
+    }
+
+    // 刷新结果
+    function refreshResults() {
+        loadTaskResults();
+        showNotification('结果列表已刷新', 'info');
+    }
+
+    // 更新结果统计
+    function updateResultsStatistics() {
+        const successCount = allResults.filter(result => result.success).length;
+        const failedCount = allResults.filter(result => !result.success).length;
+        const totalCount = allResults.length;
+        const successRate = totalCount > 0 ? Math.round((successCount / totalCount) * 100) : 0;
+        
+        document.getElementById('success-count').textContent = successCount;
+        document.getElementById('failed-count').textContent = failedCount;
+        document.getElementById('success-progress').style.width = successRate + '%';
     }
 
     // 取消任务
@@ -268,11 +544,65 @@
         }
     }
 
+    // 自动刷新相关变量
+    let refreshInterval = null;
+    
+    // 启动自动刷新
+    function startAutoRefresh() {
+        if (refreshInterval) {
+            clearInterval(refreshInterval);
+        }
+        
+        console.log('启动自动刷新，每3秒刷新一次');
+        refreshInterval = setInterval(function() {
+            console.log('自动刷新任务详情和日志...');
+            loadTaskDetail(); // 这会重新加载所有信息，包括日志
+        }, 3000); // 每3秒刷新一次
+    }
+    
+    // 停止自动刷新
+    function stopAutoRefresh() {
+        if (refreshInterval) {
+            console.log('停止自动刷新');
+            clearInterval(refreshInterval);
+            refreshInterval = null;
+        }
+    }
+    
+    // 页面卸载时清理定时器
+    window.addEventListener('beforeunload', function() {
+        stopAutoRefresh();
+    });
+
     // 绑定取消任务按钮事件
     document.addEventListener('click', function(e) {
         if (e.target.id === 'cancel-task-btn') {
             cancelTask();
         }
     });
+
+    // 辅助函数
+    function formatDuration(seconds) {
+        if (seconds < 60) {
+            return `${seconds}秒`;
+        } else if (seconds < 3600) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            return `${minutes}分${remainingSeconds}秒`;
+        } else {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            return `${hours}小时${minutes}分钟`;
+        }
+    }
+
+    function getProgressBarClass(status) {
+        switch(status) {
+            case 'completed': return 'bg-success';
+            case 'error': return 'bg-danger';
+            case 'running': return 'bg-primary';
+            default: return 'bg-secondary';
+        }
+    }
 </script>
 {% endblock %}

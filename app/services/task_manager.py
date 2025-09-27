@@ -1,6 +1,9 @@
 import uuid
 import threading
 import queue
+import json
+# 获取当前应用实例，传递给后台线程
+from flask import current_app
 from datetime import datetime
 from typing import Dict, Any, Optional
 from app.models import Task, TaskLog, TaskResult, db
@@ -21,12 +24,15 @@ class TaskManager:
         """创建新任务"""
         task_id = str(uuid.uuid4())
         
+        # 确保配置被正确序列化
+        config_str = json.dumps(config) if isinstance(config, dict) else str(config)
+        
         task = Task(
             id=task_id,
             name=name,
             description=description,
             task_type=task_type,
-            config=config,
+            config=config_str,
             status='pending'
         )
         
@@ -54,9 +60,12 @@ class TaskManager:
         # 创建事件队列
         self.task_events[task_id] = queue.Queue()
         
+
+        app = current_app._get_current_object()
+        
         # 根据任务类型启动相应的执行器
         if task.task_type == 'google_sheet':
-            thread = threading.Thread(target=self._execute_google_sheet_task, args=(task_id,))
+            thread = threading.Thread(target=self._execute_google_sheet_task, args=(task_id, app))
         else:
             logger.error(f"不支持的任务类型: {task.task_type}")
             return False
@@ -114,46 +123,90 @@ class TaskManager:
         results = TaskResult.query.filter_by(task_id=task_id).order_by(TaskResult.step_index.asc()).all()
         return [result.to_dict() for result in results]
     
-    def _execute_google_sheet_task(self, task_id: str):
+    def delete_task(self, task_id: str) -> bool:
+        """删除任务及其相关数据"""
+        try:
+            with current_app.app_context():
+                # 检查任务是否存在
+                task = Task.query.get(task_id)
+                if not task:
+                    logger.warning(f"任务不存在: {task_id}")
+                    return False
+                
+                # 如果任务正在运行，先取消任务
+                if task.status == 'running':
+                    self.cancel_task(task_id)
+                
+                # 删除任务结果
+                TaskResult.query.filter_by(task_id=task_id).delete()
+                
+                # 删除任务日志
+                TaskLog.query.filter_by(task_id=task_id).delete()
+                
+                # 删除任务本身
+                db.session.delete(task)
+                
+                # 提交事务
+                db.session.commit()
+                
+                # 清理内存中的任务事件队列
+                if task_id in self.task_events:
+                    del self.task_events[task_id]
+                
+                logger.info(f"任务删除成功: {task_id}")
+                return True
+                
+        except Exception as e:
+            logger.error(f"删除任务失败: {task_id}, 错误: {str(e)}")
+            db.session.rollback()
+            return False
+    
+    def _execute_google_sheet_task(self, task_id: str, app):
         """执行Google Sheet任务"""
         try:
-            task = Task.query.get(task_id)
-            if not task:
-                return
-            
-            # 更新任务状态
-            task.status = 'running'
-            task.start_time = datetime.utcnow()
-            db.session.commit()
-            
-            self._add_task_log(task_id, 'info', '开始执行Google Sheet任务')
-            
-            # 创建Google Sheet服务
-            config = task.config
-            service = GoogleSheetService(config)
-            
-            # 执行任务
-            success = service.execute_task(task_id, self.task_events.get(task_id))
-            
-            # 更新任务状态
-            task.status = 'completed' if success else 'error'
-            task.end_time = datetime.utcnow()
-            db.session.commit()
-            
-            self._add_task_log(task_id, 'info', f'任务执行完成，状态: {task.status}')
+            # 使用传递的应用实例创建应用上下文
+            with app.app_context():
+                task = Task.query.get(task_id)
+                if not task:
+                    return
+                
+                # 更新任务状态
+                task.status = 'running'
+                task.start_time = datetime.utcnow()
+                db.session.commit()
+                
+                self._add_task_log(task_id, 'info', '开始执行Google Sheet任务', app)
+                
+                # 创建Google Sheet服务
+                config = task.config
+                service = GoogleSheetService(config)
+                
+                # 执行任务
+                success = service.execute_task(task_id, self.task_events.get(task_id), app)
+                
+                # 更新任务状态
+                task.status = 'completed' if success else 'error'
+                task.end_time = datetime.utcnow()
+                db.session.commit()
+                
+                self._add_task_log(task_id, 'info', f'任务执行完成，状态: {task.status}', app)
             
         except Exception as e:
             logger.error(f"执行任务失败: {task_id}, 错误: {str(e)}")
             
             # 更新任务状态为错误
-            task = Task.query.get(task_id)
-            if task:
-                task.status = 'error'
-                task.error_message = str(e)
-                task.end_time = datetime.utcnow()
-                db.session.commit()
+            try:
+                with app.app_context():
+                    task = Task.query.get(task_id)
+                    if task:
+                        task.status = 'error'
+                        task.error_message = str(e)
+                        task.end_time = datetime.utcnow()
+                        db.session.commit()
+            except:
+                pass
             
-            self._add_task_log(task_id, 'error', f'任务执行失败: {str(e)}')
+            self._add_task_log(task_id, 'error', f'任务执行失败: {str(e)}', app)
         
         finally:
             # 清理资源
@@ -162,32 +215,63 @@ class TaskManager:
             if task_id in self.task_events:
                 del self.task_events[task_id]
     
-    def _add_task_log(self, task_id: str, level: str, message: str):
+    def _add_task_log(self, task_id: str, level: str, message: str, app=None):
         """添加任务日志"""
         try:
-            log = TaskLog(
-                task_id=task_id,
-                level=level,
-                message=message
-            )
-            db.session.add(log)
-            db.session.commit()
+            if app:
+                # 在后台线程中使用传递的应用实例
+                with app.app_context():
+                    log = TaskLog(
+                        task_id=task_id,
+                        level=level,
+                        message=message
+                    )
+                    db.session.add(log)
+                    db.session.commit()
+            else:
+                # 在主线程中使用当前应用上下文
+                from flask import current_app
+                with current_app.app_context():
+                    log = TaskLog(
+                        task_id=task_id,
+                        level=level,
+                        message=message
+                    )
+                    db.session.add(log)
+                    db.session.commit()
         except Exception as e:
             logger.error(f"添加任务日志失败: {str(e)}")
     
-    def _add_task_result(self, task_id: str, step_index: int, parameters: Dict, result: Dict, success: bool, error_message: str = None):
+    def _add_task_result(self, task_id: str, step_index: int, parameters: Dict, result: Dict, success: bool, error_message: str = None, app=None):
         """添加任务结果"""
         try:
-            task_result = TaskResult(
-                task_id=task_id,
-                step_index=step_index,
-                parameters=parameters,
-                result=result,
-                success=success,
-                error_message=error_message
-            )
-            db.session.add(task_result)
-            db.session.commit()
+            if app:
+                # 在后台线程中使用传递的应用实例
+                with app.app_context():
+                    task_result = TaskResult(
+                        task_id=task_id,
+                        step_index=step_index,
+                        parameters=json.dumps(parameters),
+                        result=json.dumps(result),
+                        success=success,
+                        error_message=error_message
+                    )
+                    db.session.add(task_result)
+                    db.session.commit()
+            else:
+                # 在主线程中使用当前应用上下文
+                from flask import current_app
+                with current_app.app_context():
+                    task_result = TaskResult(
+                        task_id=task_id,
+                        step_index=step_index,
+                        parameters=json.dumps(parameters),
+                        result=json.dumps(result),
+                        success=success,
+                        error_message=error_message
+                    )
+                    db.session.add(task_result)
+                    db.session.commit()
         except Exception as e:
             logger.error(f"添加任务结果失败: {str(e)}")
 
