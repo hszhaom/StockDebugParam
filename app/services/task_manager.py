@@ -87,7 +87,7 @@ class TaskManager:
             return False
         
         task.status = 'cancelled'
-        task.end_time = datetime.utcnow()
+        task.end_time = datetime.now()
         db.session.commit()
         
         # 清理资源
@@ -172,21 +172,21 @@ class TaskManager:
                 
                 # 更新任务状态
                 task.status = 'running'
-                task.start_time = datetime.utcnow()
+                task.start_time = datetime.now()
                 db.session.commit()
                 
                 self._add_task_log(task_id, 'info', '开始执行Google Sheet任务', app)
                 
                 # 创建Google Sheet服务
                 config = task.config
-                service = GoogleSheetService(config)
+                service = GoogleSheetService(config,task_id, self.task_events.get(task_id), app)
                 
                 # 执行任务
-                success = service.execute_task(task_id, self.task_events.get(task_id), app)
+                success = service.execute_task()
                 
                 # 更新任务状态
                 task.status = 'completed' if success else 'error'
-                task.end_time = datetime.utcnow()
+                task.end_time = datetime.now()
                 db.session.commit()
                 
                 self._add_task_log(task_id, 'info', f'任务执行完成，状态: {task.status}', app)
@@ -201,7 +201,7 @@ class TaskManager:
                     if task:
                         task.status = 'error'
                         task.error_message = str(e)
-                        task.end_time = datetime.utcnow()
+                        task.end_time = datetime.now()
                         db.session.commit()
             except:
                 pass

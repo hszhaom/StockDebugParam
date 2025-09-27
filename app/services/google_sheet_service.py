@@ -19,20 +19,29 @@ logger = get_logger(__name__)
 class GoogleSheetService:
     """Google Sheet服务"""
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Dict[str, Any], task_id: str, event_queue=None, app=None):
         self.config = config
         self.google_sheet = None
         self.api_client = StockAPIClient()
+        # 保存参数到实例变量
+        self.task_id = task_id
+        self.event_queue = event_queue
+        self.app = app
 
     def execute_task(self, task_id: str, event_queue=None, app=None):
         """执行Google Sheet任务"""
         try:
+            # 保存参数到实例变量
+            self.task_id = task_id
+            self.event_queue = event_queue
+            self.app = app
+            
             # 统一使用应用上下文
             context_app = app or current_app
             with context_app.app_context():
                 task = Task.query.get(task_id)
                 if not task:
-                    self._push_log(task_id, 'error', f'任务 {task_id} 不存在', event_queue)
+                    self._push_log('error', f'任务 {self.task_id} 不存在')
                     return False
 
                 # 解析配置
@@ -42,7 +51,7 @@ class GoogleSheetService:
                 config_data = {**config_manager.get_google_sheet_config(), **config_data}
                 
                 # 推送任务开始日志
-                self._push_log(task_id, 'info', '开始执行Google Sheet任务', event_queue)
+                self._push_log('info', '开始执行Google Sheet任务')
 
                 # 初始化Google Sheet连接
                 self._init_google_sheet(config_data)
@@ -52,7 +61,7 @@ class GoogleSheetService:
                 if not parameters:
                     error_msg = f"任务 {task_id} 没有参数配置"
                     logger.error(error_msg)
-                    self._push_log(task_id, 'error', error_msg, event_queue)
+                    self._push_log('error', error_msg)
                     return False
                 
                 name = task.name
@@ -71,8 +80,7 @@ class GoogleSheetService:
                 if stock_param is not None and stock_param != "error":
                     multiplier_index = 0 if stock_param.get('multiplier_index', 0) == 0 else stock_param.get(
                         'multiplier_index', 0) + 1
-                    success_count, failed_count = self.get_bdl(task, task_id, event_queue, app, name, parameters,
-                                                               config_data, multiplier_index)
+                    success_count, failed_count = self.get_bdl(task, name, parameters, config_data, multiplier_index)
                 elif stock_param != "error":
                     # cell_updates = {
                     #     "B6": multiplier_value,
@@ -94,30 +102,29 @@ class GoogleSheetService:
                     #     return False, {}
                     # time.sleep(random.randint(20, 30))
                     # self._push_log(task_id, 'info', f'默认参数已写入到表格: {cell_updates}', event_queue)
-                    success_count, failed_count = self.get_bdl(task, task_id, event_queue, app, name, parameters,
-                                                               config_data)
+                    success_count, failed_count = self.get_bdl(task, name, parameters, config_data)
                 else:
                     logger.error("获取股票参数失败")
 
                 # success_count, failed_count = self.get_bdl(task, task_id, event_queue, app, parameters, config_data)
 
                 if success_count == 0 and failed_count == 0:
-                    self._push_log(task_id, 'error', '任务执行失败', event_queue)
+                    self._push_log('error', '任务执行失败')
                     return False
 
                 # 推送任务完成信息
                 completion_msg = f'任务执行完成！成功: {success_count}, 失败: {failed_count}'
-                self._push_log(task_id, 'info', completion_msg, event_queue)
+                self._push_log('info', completion_msg)
 
                 return True
 
         except Exception as e:
             error_msg = f"执行Google Sheet任务失败: {task_id}, 错误: {str(e)}"
             logger.error(error_msg)
-            self._push_log(task_id, 'error', error_msg, event_queue)
+            self._push_log('error', error_msg)
             return False
 
-    def get_bdl(self, task, task_id, event_queue, app, name, parameters, config_data, index_z=0):
+    def get_bdl(self, task, name, parameters, config_data, index_z=0):
         """执行批量数据处理"""
         try:
             # 计算总参数组合数（不生成实际组合，避免内存问题）
@@ -130,32 +137,32 @@ class GoogleSheetService:
             db.session.commit()
 
             # 推送参数组合信息
-            self._push_log(task_id, 'info', f'将执行 {total_combinations} 个参数组合', event_queue)
+            self._push_log('info', f'将执行 {total_combinations} 个参数组合')
 
             # 执行参数组合
             success_count = 0
             failed_count = 0
             if index_z > total_combinations:
-                self._push_log(task_id, 'info', f'任务数据库内条数:{index_z} > 参数组合条数:{total_combinations}，跳过执行,好像执行过的', event_queue)
+                self._push_log('info', f'任务数据库内条数:{index_z} > 参数组合条数:{total_combinations}，跳过执行,好像执行过的')
                 return 0, 0
 
 
             for i in range(index_z, total_combinations):
-                logger.info(f"开始执行第 {i + 1}/{total_combinations} 个参数组合")
+                self._info(f"开始执行第 {i + 1}/{total_combinations} 个参数组合")
                 
                 # 按需计算参数组合，避免内存问题
                 combination = self._get_parameter_combination_by_index(parameters, i)
                 
                 # 检查任务是否被取消
-                task = Task.query.get(task_id)  # 重新获取任务状态
+                task = Task.query.get(self.task_id)  # 重新获取任务状态
                 if not task or task.status == 'cancelled':
-                    logger.warning(f"任务 {task_id} 已被取消，停止执行")
-                    self._push_log(task_id, 'warning', f'任务 {task_id} 已被取消', event_queue)
+                    self._warning(f"任务已被取消，停止执行")
+                    self._push_log('warning', f'任务 {self.task_id} 已被取消')
                     return False
 
                 # 推送执行进度
                 progress_msg = f'正在执行第 {i + 1}/{total_combinations} 个参数组合 {combination}'
-                self._push_log(task_id, 'info', progress_msg, event_queue)
+                self._push_log('info', progress_msg)
 
                 # 更新当前步数
                 task.current_step = i + 1
@@ -163,15 +170,13 @@ class GoogleSheetService:
 
                 # 执行单个参数组合
                 try:
-                    success, result = self._execute_parameter_combination(
-                        task_id, i, combination, config_data, event_queue
-                    )
+                    success, result = self._execute_parameter_combination(i, combination, config_data)
 
                     if success:
                         success_count += 1
-                        self._push_log(task_id, 'info', f'第 {i + 1} 个参数组合执行成功，{result}', event_queue)
+                        self._push_log('info', f'第 {i + 1} 个参数组合执行成功，{result}')
                     else:
-                        self._push_log(task_id, 'warning', f'第 {i + 1} 个参数组合执行失败', event_queue)
+                        self._push_log('warning', f'第 {i + 1} 个参数组合执行失败')
                         failed_count += 1
                         continue
 
@@ -200,7 +205,7 @@ class GoogleSheetService:
                         "year_rate": result['I23']
                     }
                     # 保存结果到数据库
-                    self._save_task_result(task_id, i, combination, result, success, app)
+                    self._save_task_result(i, combination, result, success)
                     # # 推送结果，到生产数据库
                     # self.send_stock_template_param_data(param_load)
 
@@ -208,17 +213,17 @@ class GoogleSheetService:
                     failed_count += 1
                     error_msg = f'第 {i + 1} 个参数组合执行出错: {str(e)}'
                     logger.error(error_msg)
-                    self._push_log(task_id, 'error', error_msg, event_queue)
+                    self._push_log('error', error_msg)
 
-                logger.info(f"第 {i + 1} 个参数组合执行完成，成功: {success_count}, 失败: {failed_count}")
+                self._info(f"第 {i + 1} 个参数组合执行完成，成功: {success_count}, 失败: {failed_count}")
 
-            logger.info(f"批量数据处理完成，总成功: {success_count}, 总失败: {failed_count}")
+            self._info(f"批量数据处理完成，总成功: {success_count}, 总失败: {failed_count}")
             return success_count, failed_count
             
         except Exception as e:
             error_msg = f"批量数据处理失败: {str(e)}"
             logger.error(error_msg)
-            self._push_log(task_id, 'error', error_msg, event_queue)
+            self._push_log('error', error_msg)
             return 0, 1
 
     @retry(
@@ -294,11 +299,10 @@ class GoogleSheetService:
             logger.error(error_msg)
             raise
 
-    def _execute_parameter_combination(self, task_id: str, index: int, combination: List, config_data: Dict[str, Any],
-                                       event_queue=None) -> tuple:
+    def _execute_parameter_combination(self, index: int, combination: List, config_data: Dict[str, Any]) -> tuple:
         """执行单个参数组合"""
         try:
-            logger.info(f"执行第 {index + 1} 个参数组合: {combination}")
+            self._info(f"执行第 {index + 1} 个参数组合: {combination}")
 
             # 获取参数位置配置
             param_positions = config_data.get('parameter_positions', [])
@@ -314,9 +318,11 @@ class GoogleSheetService:
             # 批量更新单元格
             if self.google_sheet:
                 self.google_sheet.update_jumped_cells(cell_updates)
-                logger.info(f"参数已写入到表格: {cell_updates}")
+                self._info(f"参数已写入到表格: {cell_updates}")
             else:
-                logger.error("Google Sheet连接未建立")
+                error_msg = "Google Sheet连接未建立"
+                logger.error(error_msg)
+                self._push_log('error', error_msg)
                 return False, {}
 
             # 等待执行完成，检查指定位置
@@ -326,7 +332,7 @@ class GoogleSheetService:
             # 定时检查是否完成（最多检查60次，20-30秒）
             for attempt in range(60):
                 time.sleep(random.randint(20, 30))  
-                logger.info(f"第 {attempt + 1} 次检查执行状态...")
+                self._info(f"第 {attempt + 1} 次检查执行状态...")
 
                 # 检查所有位置是否都有产出
                 all_completed = True
@@ -342,11 +348,13 @@ class GoogleSheetService:
                                 break
                                 
                     except Exception as e:
-                        logger.error(f"批量检查位置时出错: {str(e)}")
+                        error_msg = f"批量检查位置时出错: {str(e)}"
+                        logger.error(error_msg)
+                        self._push_log('error', error_msg)
                         all_completed = False
 
                 if all_completed:
-                    logger.info("所有参数执行完成，获取结果...")
+                    self._info(f"所有参数执行完成，获取结果...")
                     # 批量获取结果
                     if self.google_sheet and result_positions:
                         try:
@@ -354,36 +362,43 @@ class GoogleSheetService:
                             for position in result_positions:
                                 results[position] = result_values.get(position, "获取失败")
                         except Exception as e:
-                            logger.error(f"批量获取结果时出错: {str(e)}")
+                            error_msg = f"批量获取结果时出错: {str(e)}"
+                            logger.error(error_msg)
+                            self._push_log('error', error_msg)
                             # 回退到逐个获取
                             for position in result_positions:
                                 try:
                                     value = self.google_sheet.get_cell(position)
                                     results[position] = value
                                 except Exception as cell_error:
-                                    logger.error(f"获取结果位置 {position} 时出错: {str(cell_error)}")
+                                    error_msg = f"获取结果位置 {position} 时出错: {str(cell_error)}"
+                                    logger.error(error_msg)
+                                    self._push_log('error', error_msg)
                                     results[position] = "获取失败"
 
-                    logger.info(f"执行结果: {results}")
+                    self._info(f"执行结果: {results}")
                     return True, results
 
-            logger.warning("执行超时，未在规定时间内完成")
+            self._warning("执行超时，未在规定时间内完成")
+            self._push_log('warning', "执行超时，未在规定时间内完成")
             return False, {}
 
         except Exception as e:
-            logger.error(f"执行参数组合时出错: {str(e)}")
+            error_msg = f"执行参数组合时出错: {str(e)}"
+            logger.error(error_msg)
+            self._push_log('error', error_msg)
             return False, {}
 
-    def _wait_for_confirmation(self, task_id: str, combination: List, result: Dict, event_queue, app=None) -> bool:
+    def _wait_for_confirmation(self, combination: List, result: Dict) -> bool:
         """等待前端确认"""
-        if not event_queue:
+        if not self.event_queue:
             return True
 
         try:
-            logger.info(f"发送第一次执行结果到前端，等待确认...")
+            self._info(f"发送第一次执行结果到前端，等待确认...")
 
             # 发送确认请求到前端
-            event_queue.put({
+            self.event_queue.put({
                 "type": "first_execution_complete",
                 "data": {
                     "params": combination,
@@ -391,64 +406,98 @@ class GoogleSheetService:
                 }
             })
 
-            logger.info(f"已发送确认请求，等待前端响应...")
+            self._info(f"已发送确认请求，等待前端响应...")
 
             # 等待确认事件 - 需要过滤掉自己发送的事件
             while True:
-                event = event_queue.get(timeout=300)  # 5分钟超时
-                logger.info(f"收到事件: {event}")
+                event = self.event_queue.get(timeout=300)  # 5分钟超时
+                self._info(f"收到事件: {event}")
 
                 # 如果是自己发送的事件，跳过
                 if event.get("type") == "first_execution_complete":
-                    logger.info("跳过自己发送的事件，继续等待确认...")
+                    self._info(f"跳过自己发送的事件，继续等待确认...")
                     continue
 
                 # 如果是确认事件
                 if event.get("type") == "confirmation":
                     if event.get("data", {}).get("confirmed"):
-                        logger.info("收到前端确认，继续执行")
+                        self._info(f"收到前端确认，继续执行")
                         return True
                     else:
-                        logger.info("收到前端拒绝确认，停止执行")
+                        self._info(f"收到前端拒绝确认，停止执行")
                         return False
 
                 # 其他事件也跳过
-                logger.info(f"跳过非确认事件: {event.get('type')}")
+                self._info(f"跳过非确认事件: {event.get('type')}")
 
         except Exception as e:
-            logger.error(f"等待确认时出错: {str(e)}")
+            error_msg = f"等待确认时出错: {str(e)}"
+            logger.error(error_msg)
+            self._push_log('error', error_msg)
             return False
 
-    def _push_log(self, task_id: str, level: str, message: str, event_queue=None):
+    def _info(self, message: str):
+        """记录info级别日志"""
+        if self.task_id:
+            logger.info(f"任务 {self.task_id}: {message}")
+        else:
+            logger.info(message)
+
+    def _warning(self, message: str):
+        """记录warning级别日志"""
+        if self.task_id:
+            logger.warning(f"任务 {self.task_id}: {message}")
+        else:
+            logger.warning(message)
+
+    def _error(self, message: str):
+        """记录error级别日志"""
+        if self.task_id:
+            logger.error(f"任务 {self.task_id}: {message}")
+        else:
+            logger.error(message)
+
+
+    def _push_log(self, level: str, message: str):
         """推送日志到前端和数据库"""
         try:
             # 记录到系统日志
             if level == 'error':
-                logger.error(f"任务 {task_id}: {message}")
+                self._error(message)
             elif level == 'warning':
-                logger.warning(f"任务 {task_id}: {message}")
+                self._warning(message)
             else:
-                logger.info(f"任务 {task_id}: {message}")
+                self._info(message)
 
             # 保存到数据库
-            with current_app.app_context():
-                log = TaskLog(
-                    task_id=task_id,
-                    level=level,
-                    message=message
-                )
-                db.session.add(log)
-                db.session.commit()
+            if self.app:
+                with self.app.app_context():
+                    log = TaskLog(
+                        task_id=self.task_id,
+                        level=level,
+                        message=message
+                    )
+                    db.session.add(log)
+                    db.session.commit()
+            else:
+                with current_app.app_context():
+                    log = TaskLog(
+                        task_id=self.task_id,
+                        level=level,
+                        message=message
+                    )
+                    db.session.add(log)
+                    db.session.commit()
 
             # 推送到前端（如果SSE连接存在）
-            if event_queue:
+            if self.event_queue:
                 try:
-                    event_queue.put({
+                    self.event_queue.put({
                         "type": "log_update",
                         "data": {
                             "level": level,
                             "message": message,
-                            "timestamp": datetime.utcnow().isoformat()
+                            "timestamp": datetime.now().isoformat()
                         }
                     })
                 except Exception as e:
@@ -457,14 +506,14 @@ class GoogleSheetService:
         except Exception as e:
             logger.error(f"推送日志失败: {str(e)}")
 
-    def _save_task_result(self, task_id: str, step_index: int, parameters: List, result: Dict, success: bool, app=None):
+    def _save_task_result(self, step_index: int, parameters: List, result: Dict, success: bool):
         """保存任务结果到数据库"""
         try:
-            if app:
+            if self.app:
                 # 在后台线程中使用传递的应用实例
-                with app.app_context():
+                with self.app.app_context():
                     task_result = TaskResult(
-                        task_id=task_id,
+                        task_id=self.task_id,
                         step_index=step_index,
                         parameters=json.dumps(parameters),
                         result=json.dumps(result),
@@ -477,7 +526,7 @@ class GoogleSheetService:
                 from flask import current_app
                 with current_app.app_context():
                     task_result = TaskResult(
-                        task_id=task_id,
+                        task_id=self.task_id,
                         step_index=step_index,
                         parameters=json.dumps(parameters),
                         result=json.dumps(result),
@@ -486,7 +535,9 @@ class GoogleSheetService:
                     db.session.add(task_result)
                     db.session.commit()
         except Exception as e:
-            logger.error(f"保存任务结果失败: {str(e)}")
+            error_msg = f"保存任务结果失败: {str(e)}"
+            logger.error(error_msg)
+            # 注意：这里不能使用_push_log，因为可能导致循环调用
 
     def _get_parameter_combination_by_index(self, parameters: List[List], index: int) -> List:
         """

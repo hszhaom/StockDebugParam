@@ -25,47 +25,47 @@
                     <div class="col-md-8">
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <div class="card bg-light">
+                                <div class="card bg-light h-100">
                                     <div class="card-body">
-                                        <h6 class="card-title text-muted mb-2">任务信息</h6>
-                                        <div class="mb-2">
-                                            <strong>任务名称:</strong>
-                                            <div class="text-primary" id="task-name">-</div>
+                                        <h6 class="card-title text-muted mb-3">任务信息</h6>
+                                        <div class="row mb-2">
+                                            <div class="col-4"><strong>任务名称:</strong></div>
+                                            <div class="col-8 text-primary" id="task-name">-</div>
                                         </div>
-                                        <div class="mb-2">
-                                            <strong>任务ID:</strong>
-                                            <div class="text-muted small" id="task-id">-</div>
+                                        <div class="row mb-2">
+                                            <div class="col-4"><strong>任务ID:</strong></div>
+                                            <div class="col-8 text-muted small" id="task-id">-</div>
                                         </div>
-                                        <div class="mb-2">
-                                            <strong>状态:</strong>
-                                            <div id="task-status">-</div>
+                                        <div class="row mb-2">
+                                            <div class="col-4"><strong>状态:</strong></div>
+                                            <div class="col-8" id="task-status">-</div>
                                         </div>
-                                        <div class="mb-2">
-                                            <strong>进度:</strong>
-                                            <div id="task-progress">-</div>
+                                        <div class="row mb-2">
+                                            <div class="col-4"><strong>进度:</strong></div>
+                                            <div class="col-8" id="task-progress">-</div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <div class="card bg-light">
+                                <div class="card bg-light h-100">
                                     <div class="card-body">
-                                        <h6 class="card-title text-muted mb-2">时间信息</h6>
-                                        <div class="mb-2">
-                                            <strong>开始时间:</strong>
-                                            <div class="text-success" id="start-time">-</div>
+                                        <h6 class="card-title text-muted mb-3">时间信息</h6>
+                                        <div class="row mb-2">
+                                            <div class="col-4"><strong>开始时间:</strong></div>
+                                            <div class="col-8 text-success" id="start-time">-</div>
                                         </div>
-                                        <div class="mb-2">
-                                            <strong>结束时间:</strong>
-                                            <div class="text-info" id="end-time">-</div>
+                                        <div class="row mb-2">
+                                            <div class="col-4"><strong>结束时间:</strong></div>
+                                            <div class="col-8 text-info" id="end-time">-</div>
                                         </div>
-                                        <div class="mb-2">
-                                            <strong>执行时长:</strong>
-                                            <div class="text-warning" id="execution-duration">-</div>
+                                        <div class="row mb-2">
+                                            <div class="col-4"><strong>执行时长:</strong></div>
+                                            <div class="col-8 text-warning" id="execution-duration">-</div>
                                         </div>
-                                        <div class="mb-2" id="error-info" style="display: none;">
-                                            <strong>错误信息:</strong>
-                                            <div class="text-danger" id="error-message">-</div>
+                                        <div class="row mb-2" id="error-info" style="display: none;">
+                                            <div class="col-4"><strong>错误信息:</strong></div>
+                                            <div class="col-8 text-danger" id="error-message">-</div>
                                         </div>
                                     </div>
                                 </div>
@@ -73,7 +73,7 @@
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="card bg-primary text-white">
+                        <div class="card bg-primary text-white h-100">
                             <div class="card-body text-center">
                                 <h5 class="card-title">执行统计</h5>
                                 <div class="row text-center">
@@ -91,6 +91,29 @@
                                         <div class="progress-bar bg-success" id="success-progress" style="width: 0%"></div>
                                     </div>
                                     <small class="mt-1 d-block">成功率</small>
+                                </div>
+                                
+                                <!-- 刷新控制区域 -->
+                                <div class="mt-4 pt-3 border-top border-light">
+                                    <div class="row g-2">
+                                        <div class="col-8">
+                                            <select class="form-select form-select-sm" id="refresh-frequency">
+                                                <option value="5000">5秒</option>
+                                                <option value="15000">15秒</option>
+                                                <option value="30000">30秒</option>
+                                                <option value="60000" selected>1分钟</option>
+                                                <option value="120000">2分钟</option>
+                                                <option value="300000">5分钟</option>
+                                                <option value="600000">10分钟</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-4">
+                                            <button class="btn btn-light btn-sm w-100" id="manual-refresh-btn" title="手动刷新">
+                                                <i class="bi bi-arrow-clockwise"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <small class="text-light mt-1 d-block">自动刷新</small>
                                 </div>
                             </div>
                         </div>
@@ -161,15 +184,15 @@
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-hover" id="results-table">
+                    <table class="table table-hover table-sm" id="results-table" style="margin-bottom: 0;">
                         <thead class="table-dark">
                             <tr>
-                                <th>序号</th>
-                                <th>参数组合</th>
-                                <th>执行结果</th>
-                                <th>状态</th>
-                                <th>执行时间</th>
-                                <th>耗时</th>
+                                <th style="width: 60px;">序号</th>
+                                <th style="width: 200px;">参数组合</th>
+                                <th style="width: 300px;">执行结果</th>
+                                <th style="width: 80px;">状态</th>
+                                <th style="width: 140px;">执行时间</th>
+                                <th style="width: 80px;">耗时</th>
                             </tr>
                         </thead>
                         <tbody id="results-table-body">
@@ -191,23 +214,117 @@
 {% endblock %}
 
 {% block scripts %}
+<style>
+    /* 优化结果表格样式 */
+    #results-table {
+        font-size: 0.875rem;
+    }
+    
+    #results-table td {
+        vertical-align: middle;
+        padding: 0.5rem 0.75rem;
+    }
+    
+    #results-table th {
+        padding: 0.75rem 0.75rem;
+        font-weight: 600;
+        font-size: 0.875rem;
+    }
+    
+    .result-content {
+        max-height: 120px;
+        overflow-y: auto;
+        font-size: 0.75rem;
+        line-height: 1.3;
+    }
+    
+    .result-content pre {
+        background-color: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 4px;
+        padding: 8px;
+        margin: 0;
+        font-family: 'Courier New', monospace;
+        font-size: 0.7rem;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+    
+    .result-content::-webkit-scrollbar {
+        width: 4px;
+    }
+    
+    .result-content::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 2px;
+    }
+    
+    .result-content::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 2px;
+    }
+    
+    .result-content::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+    }
+    
+    /* 参数组合标签样式 */
+    .badge {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    /* 状态徽章样式 */
+    .badge.bg-success, .badge.bg-danger {
+        font-size: 0.75rem;
+        padding: 0.3rem 0.6rem;
+    }
+    
+    /* 表格行悬停效果 */
+    #results-table tbody tr:hover {
+        background-color: rgba(0, 123, 255, 0.05);
+    }
+    
+    /* 紧凑型分页 */
+    .pagination {
+        margin-bottom: 0;
+        padding-top: 1rem;
+    }
+    
+    .page-link {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.875rem;
+    }
+    
+    /* 旋转动画 */
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+</style>
 <script>
     // 全局变量
     let currentTaskId = null;
     let statusInterval = null;
+    let refreshInterval = null;
     let allResults = [];
     let filteredResults = [];
     let currentResultsPage = 1;
     let resultsPerPage = 10;
     let currentResultsFilter = 'all';
+    let currentRefreshFrequency = 60000; // 默认1分钟
+    let taskStartTime = null; // 存储任务开始时间
 
     // 页面加载完成后获取任务详情
     document.addEventListener('DOMContentLoaded', function() {
+        console.log('页面加载完成');
         currentTaskId = getTaskIdFromUrl();
+        console.log('获取到的任务ID:', currentTaskId);
         if (currentTaskId) {
             loadTaskDetail();
-            // 每15秒刷新一次任务详情
-            statusInterval = setInterval(loadTaskDetail, 15000);
+            initializeRefreshControls();
+            // 启动自动刷新
+            startAutoRefresh();
         } else {
             showNotification('任务ID无效', 'error');
         }
@@ -215,10 +332,59 @@
 
     // 页面卸载时清理定时器
     window.addEventListener('beforeunload', function() {
-        if (statusInterval) {
-            clearInterval(statusInterval);
-        }
+        stopAutoRefresh();
     });
+
+    // 初始化刷新控制
+    function initializeRefreshControls() {
+        const frequencySelect = document.getElementById('refresh-frequency');
+        const manualRefreshBtn = document.getElementById('manual-refresh-btn');
+        
+        // 刷新频率选择事件
+        frequencySelect.addEventListener('change', function() {
+            currentRefreshFrequency = parseInt(this.value);
+            console.log('刷新频率更改为:', currentRefreshFrequency + 'ms');
+            startAutoRefresh(); // 重新启动自动刷新
+            showNotification(`自动刷新频率已设置为 ${getFrequencyText(currentRefreshFrequency)}`, 'info');
+        });
+        
+        // 手动刷新按钮事件
+        manualRefreshBtn.addEventListener('click', function() {
+            manualRefresh();
+        });
+    }
+
+    // 获取频率文本
+    function getFrequencyText(milliseconds) {
+        const seconds = milliseconds / 1000;
+        if (seconds < 60) {
+            return `${seconds}秒`;
+        } else {
+            const minutes = seconds / 60;
+            return `${minutes}分钟`;
+        }
+    }
+
+    // 手动刷新
+    function manualRefresh() {
+        const btn = document.getElementById('manual-refresh-btn');
+        const icon = btn.querySelector('i');
+        
+        // 添加旋转动画
+        icon.style.animation = 'spin 1s linear infinite';
+        btn.disabled = true;
+        
+        console.log('执行手动刷新...');
+        loadTaskDetail();
+        
+        // 1秒后恢复按钮
+        setTimeout(() => {
+            icon.style.animation = '';
+            btn.disabled = false;
+        }, 1000);
+        
+        showNotification('手动刷新完成', 'success');
+    }
 
     // 获取URL中的任务ID
     function getTaskIdFromUrl() {
@@ -228,9 +394,12 @@
 
     // 加载任务详情
     function loadTaskDetail() {
+        console.log('开始加载任务详情，任务ID:', currentTaskId);
         ajaxRequest(`/api/tasks/${currentTaskId}`, 'GET', null, function(err, data) {
+            console.log('API响应:', err, data);
             if (!err && data && data.task) {
                 const task = data.task;
+                console.log('任务数据:', task);
                 
                 // 填充基本信息
                 document.getElementById('task-id').textContent = task.id;
@@ -251,6 +420,11 @@
                 // 更新时间信息
                 document.getElementById('start-time').textContent = formatTime(task.start_time);
                 document.getElementById('end-time').textContent = formatTime(task.end_time);
+                
+                // 保存任务开始时间用于计算耗时
+                if (task.start_time) {
+                    taskStartTime = new Date(task.start_time);
+                }
                 
                 // 计算执行时长
                 const startTime = new Date(task.start_time);
@@ -426,9 +600,9 @@
 
     // 渲染结果列表
     function renderResults() {
-                const tbody = document.getElementById('results-table-body');
-                tbody.innerHTML = '';
-                
+        const tbody = document.getElementById('results-table-body');
+        tbody.innerHTML = '';
+        
         // 计算分页
         const startIndex = (currentResultsPage - 1) * resultsPerPage;
         const endIndex = startIndex + resultsPerPage;
@@ -436,35 +610,46 @@
         
         // 填充结果列表
         pageResults.forEach(result => {
-                    const row = document.createElement('tr');
-            const executionTime = result.result && result.result.execution_time ? result.result.execution_time : '-';
-                    row.innerHTML = `
-                        <td>${result.step_index + 1}</td>
-                        <td>
-                    <div class="small">
+            const row = document.createElement('tr');
+            
+            // 计算耗时：执行时间减去任务开始时间
+            let executionTime = '-';
+            if (result.timestamp && taskStartTime) {
+                const resultTime = new Date(result.timestamp);
+                if (!isNaN(resultTime.getTime())) {
+                    const durationMs = resultTime - taskStartTime;
+                    const durationSeconds = Math.round(durationMs / 1000);
+                    if (durationSeconds >= 0) {
+                        executionTime = formatDuration(durationSeconds);
+                    }
+                }
+            }
+            
+            row.innerHTML = `
+                <td>${result.step_index + 1}</td>
+                <td>
+                    <div class="d-flex flex-wrap gap-1">
                         ${result.parameters.map((param, i) => 
-                            `<span class="badge bg-secondary me-1">参数${i+1}: ${param}</span>`
-                        ).join('<br>')}
+                            `<span class="badge bg-secondary" style="font-size: 0.75rem;">${param}</span>`
+                        ).join('')}
                     </div>
-                        </td>
-                        <td>
-                    <div class="small">
-                        ${result.result ? Object.entries(result.result).map(([key, value]) => 
-                            `<strong>${key}:</strong> ${value}`
-                        ).join('<br>') : '-'}
+                </td>
+                <td>
+                    <div class="result-content">
+                        ${result.result ? `<pre class="mb-0 small text-dark">${JSON.stringify(result.result, null, 2)}</pre>` : '<span class="text-muted">-</span>'}
                     </div>
-                        </td>
-                        <td>
-                            <span class="badge ${result.success ? 'bg-success' : 'bg-danger'}">
+                </td>
+                <td>
+                    <span class="badge ${result.success ? 'bg-success' : 'bg-danger'}">
                         <i class="bi ${result.success ? 'bi-check-circle' : 'bi-x-circle'}"></i>
-                                ${result.success ? '成功' : '失败'}
-                            </span>
-                        </td>
-                        <td>${formatTime(result.timestamp)}</td>
+                        ${result.success ? '成功' : '失败'}
+                    </span>
+                </td>
+                <td>${formatTime(result.timestamp)}</td>
                 <td>${executionTime}</td>
-                    `;
-                    tbody.appendChild(row);
-                });
+            `;
+            tbody.appendChild(row);
+        });
         
         // 渲染分页
         renderResultsPagination();
@@ -544,8 +729,7 @@
         }
     }
 
-    // 自动刷新相关变量
-    let refreshInterval = null;
+    // 自动刷新相关变量（已在全局变量中声明）
     
     // 启动自动刷新
     function startAutoRefresh() {
@@ -553,11 +737,11 @@
             clearInterval(refreshInterval);
         }
         
-        console.log('启动自动刷新，每3秒刷新一次');
+        console.log(`启动自动刷新，每${getFrequencyText(currentRefreshFrequency)}刷新一次`);
         refreshInterval = setInterval(function() {
             console.log('自动刷新任务详情和日志...');
             loadTaskDetail(); // 这会重新加载所有信息，包括日志
-        }, 3000); // 每3秒刷新一次
+        }, currentRefreshFrequency);
     }
     
     // 停止自动刷新

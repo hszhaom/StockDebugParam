@@ -23,8 +23,8 @@ class Task(db.Model):
     error_message = db.Column(db.Text)
     
     # 时间戳
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     
     # 关联
     logs = db.relationship('TaskLog', backref='task', lazy=True, cascade='all, delete-orphan')
@@ -60,7 +60,7 @@ class TaskLog(db.Model):
     task_id = db.Column(db.String(36), db.ForeignKey('tasks.id'), nullable=False)
     level = db.Column(db.String(20), default='info')  # info, warning, error
     message = db.Column(db.Text, nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, default=datetime.now)
     
     def to_dict(self):
         return {
@@ -81,7 +81,7 @@ class TaskResult(db.Model):
     result = db.Column(db.Text)  # JSON格式的结果
     success = db.Column(db.Boolean, default=True)
     error_message = db.Column(db.Text)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, default=datetime.now)
     
     def to_dict(self):
         return {
@@ -102,8 +102,8 @@ class SystemConfig(db.Model):
     key = db.Column(db.String(100), unique=True, nullable=False)
     value = db.Column(db.Text)
     description = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     
     def to_dict(self):
         return {
