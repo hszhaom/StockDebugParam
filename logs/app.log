@@ -2135,3 +2135,204 @@ requests.exceptions.ProxyError: HTTPSConnectionPool(host='sheets.googleapis.com'
 2025-09-28 00:17:58,662 - app.services.google_sheet_service - INFO - 任务 dc8ab27b-5761-4bd1-a23f-2043b0efc86b: 正在执行第 10/64 个参数组合 [1, 1, 2, 1, 1, 2]
 2025-09-28 00:17:58,681 - app.services.google_sheet_service - INFO - 执行第 10 个参数组合: [1, 1, 2, 1, 1, 2]
 2025-09-28 00:17:59,006 - app.services.google_sheet_service - INFO - 参数已写入到表格: {'B6': 1, 'B7': 1, 'B9': 2, 'B10': 1, 'B11': 1, 'B12': 2}
+2025-09-28 00:18:22,007 - app.services.google_sheet_service - INFO - 第 1 次检查执行状态...
+2025-09-28 00:18:22,327 - app.services.google_sheet_client - INFO - 批量获取了 6 个单元格的值
+2025-09-28 00:18:22,327 - app.services.google_sheet_service - INFO - 所有参数执行完成，获取结果...
+2025-09-28 00:18:22,625 - app.services.google_sheet_client - INFO - 批量获取了 9 个单元格的值
+2025-09-28 00:18:22,625 - app.services.google_sheet_service - INFO - 执行结果: {'B6': 1, 'B7': 1, 'B9': 2, 'B10': 1, 'B11': 1, 'B12': 2, 'I15': '800.00%', 'I16': '700.00%', 'I17': '600.00%', 'I18': '1400.00%', 'I19': '1900.00%', 'I20': '2400.00%', 'I21': '3700.00%', 'I22': '5400.00%', 'I23': '7800.00%'}
+2025-09-28 00:18:22,626 - app.services.google_sheet_service - INFO - 任务 dc8ab27b-5761-4bd1-a23f-2043b0efc86b: 第 10 个参数组合执行成功，{'B6': 1, 'B7': 1, 'B9': 2, 'B10': 1, 'B11': 1, 'B12': 2, 'I15': '800.00%', 'I16': '700.00%', 'I17': '600.00%', 'I18': '1400.00%', 'I19': '1900.00%', 'I20': '2400.00%', 'I21': '3700.00%', 'I22': '5400.00%', 'I23': '7800.00%'}
+2025-09-28 00:18:22,640 - app.services.google_sheet_service - INFO - 第 10 个参数组合执行完成，成功: 10, 失败: 0
+2025-09-28 00:18:22,641 - app.services.google_sheet_service - INFO - 开始执行第 11/64 个参数组合
+2025-09-28 00:18:22,641 - app.services.google_sheet_service - INFO - 任务 dc8ab27b-5761-4bd1-a23f-2043b0efc86b: 正在执行第 11/64 个参数组合 [1, 1, 2, 1, 2, 1]
+2025-09-28 00:18:22,655 - app.services.google_sheet_service - INFO - 执行第 11 个参数组合: [1, 1, 2, 1, 2, 1]
+2025-09-28 00:18:22,993 - app.services.google_sheet_service - INFO - 参数已写入到表格: {'B6': 1, 'B7': 1, 'B9': 2, 'B10': 1, 'B11': 2, 'B12': 1}
+2025-09-28 00:18:42,994 - app.services.google_sheet_service - INFO - 第 1 次检查执行状态...
+2025-09-28 00:18:43,310 - app.services.google_sheet_client - INFO - 批量获取了 6 个单元格的值
+2025-09-28 00:18:43,310 - app.services.google_sheet_service - INFO - 所有参数执行完成，获取结果...
+2025-09-28 00:18:43,602 - app.services.google_sheet_client - INFO - 批量获取了 9 个单元格的值
+2025-09-28 00:18:43,602 - app.services.google_sheet_service - INFO - 执行结果: {'B6': 1, 'B7': 1, 'B9': 2, 'B10': 1, 'B11': 2, 'B12': 1, 'I15': '800.00%', 'I16': '700.00%', 'I17': '600.00%', 'I18': '1400.00%', 'I19': '1900.00%', 'I20': '2400.00%', 'I21': '3600.00%', 'I22': '5400.00%', 'I23': '7800.00%'}
+2025-09-28 00:18:43,602 - app.services.google_sheet_service - INFO - 任务 dc8ab27b-5761-4bd1-a23f-2043b0efc86b: 第 11 个参数组合执行成功，{'B6': 1, 'B7': 1, 'B9': 2, 'B10': 1, 'B11': 2, 'B12': 1, 'I15': '800.00%', 'I16': '700.00%', 'I17': '600.00%', 'I18': '1400.00%', 'I19': '1900.00%', 'I20': '2400.00%', 'I21': '3600.00%', 'I22': '5400.00%', 'I23': '7800.00%'}
+2025-09-28 00:18:43,616 - app.services.google_sheet_service - INFO - 第 11 个参数组合执行完成，成功: 11, 失败: 0
+2025-09-28 00:18:43,617 - app.services.google_sheet_service - INFO - 开始执行第 12/64 个参数组合
+2025-09-28 00:18:43,618 - app.services.google_sheet_service - INFO - 任务 dc8ab27b-5761-4bd1-a23f-2043b0efc86b: 正在执行第 12/64 个参数组合 [1, 1, 2, 1, 2, 2]
+2025-09-28 00:18:43,634 - app.services.google_sheet_service - INFO - 执行第 12 个参数组合: [1, 1, 2, 1, 2, 2]
+2025-09-28 00:18:44,000 - app.services.google_sheet_service - INFO - 参数已写入到表格: {'B6': 1, 'B7': 1, 'B9': 2, 'B10': 1, 'B11': 2, 'B12': 2}
+2025-09-28 00:19:07,000 - app.services.google_sheet_service - INFO - 第 1 次检查执行状态...
+2025-09-28 00:19:07,349 - app.services.google_sheet_client - INFO - 批量获取了 6 个单元格的值
+2025-09-28 00:19:07,349 - app.services.google_sheet_service - INFO - 所有参数执行完成，获取结果...
+2025-09-28 00:19:07,659 - app.services.google_sheet_client - INFO - 批量获取了 9 个单元格的值
+2025-09-28 00:19:07,659 - app.services.google_sheet_service - INFO - 执行结果: {'B6': 1, 'B7': 1, 'B9': 2, 'B10': 1, 'B11': 2, 'B12': 2, 'I15': '900.00%', 'I16': '800.00%', 'I17': '700.00%', 'I18': '1600.00%', 'I19': '2200.00%', 'I20': '2800.00%', 'I21': '4200.00%', 'I22': '6200.00%', 'I23': '9000.00%'}
+2025-09-28 00:19:07,660 - app.services.google_sheet_service - INFO - 任务 dc8ab27b-5761-4bd1-a23f-2043b0efc86b: 第 12 个参数组合执行成功，{'B6': 1, 'B7': 1, 'B9': 2, 'B10': 1, 'B11': 2, 'B12': 2, 'I15': '900.00%', 'I16': '800.00%', 'I17': '700.00%', 'I18': '1600.00%', 'I19': '2200.00%', 'I20': '2800.00%', 'I21': '4200.00%', 'I22': '6200.00%', 'I23': '9000.00%'}
+2025-09-28 00:19:07,677 - app.services.google_sheet_service - INFO - 第 12 个参数组合执行完成，成功: 12, 失败: 0
+2025-09-28 00:19:07,677 - app.services.google_sheet_service - INFO - 开始执行第 13/64 个参数组合
+2025-09-28 00:19:07,678 - app.services.google_sheet_service - INFO - 任务 dc8ab27b-5761-4bd1-a23f-2043b0efc86b: 正在执行第 13/64 个参数组合 [1, 1, 2, 2, 1, 1]
+2025-09-28 00:19:07,694 - app.services.google_sheet_service - INFO - 执行第 13 个参数组合: [1, 1, 2, 2, 1, 1]
+2025-09-28 00:19:07,998 - app.services.google_sheet_service - INFO - 参数已写入到表格: {'B6': 1, 'B7': 1, 'B9': 2, 'B10': 2, 'B11': 1, 'B12': 1}
+2025-09-28 00:19:37,999 - app.services.google_sheet_service - INFO - 第 1 次检查执行状态...
+2025-09-28 00:19:38,552 - app.services.google_sheet_client - INFO - 批量获取了 6 个单元格的值
+2025-09-28 00:19:38,552 - app.services.google_sheet_service - INFO - 所有参数执行完成，获取结果...
+2025-09-28 00:19:38,841 - app.services.google_sheet_client - INFO - 批量获取了 9 个单元格的值
+2025-09-28 00:19:38,841 - app.services.google_sheet_service - INFO - 执行结果: {'B6': 1, 'B7': 1, 'B9': 2, 'B10': 2, 'B11': 1, 'B12': 1, 'I15': '800.00%', 'I16': '700.00%', 'I17': '600.00%', 'I18': '1400.00%', 'I19': '1900.00%', 'I20': '2300.00%', 'I21': '3600.00%', 'I22': '5400.00%', 'I23': '7700.00%'}
+2025-09-28 00:19:38,842 - app.services.google_sheet_service - INFO - 任务 dc8ab27b-5761-4bd1-a23f-2043b0efc86b: 第 13 个参数组合执行成功，{'B6': 1, 'B7': 1, 'B9': 2, 'B10': 2, 'B11': 1, 'B12': 1, 'I15': '800.00%', 'I16': '700.00%', 'I17': '600.00%', 'I18': '1400.00%', 'I19': '1900.00%', 'I20': '2300.00%', 'I21': '3600.00%', 'I22': '5400.00%', 'I23': '7700.00%'}
+2025-09-28 00:19:38,857 - app.services.google_sheet_service - INFO - 第 13 个参数组合执行完成，成功: 13, 失败: 0
+2025-09-28 00:19:38,857 - app.services.google_sheet_service - INFO - 开始执行第 14/64 个参数组合
+2025-09-28 00:19:38,857 - app.services.google_sheet_service - INFO - 任务 dc8ab27b-5761-4bd1-a23f-2043b0efc86b: 正在执行第 14/64 个参数组合 [1, 1, 2, 2, 1, 2]
+2025-09-28 00:19:38,870 - app.services.google_sheet_service - INFO - 执行第 14 个参数组合: [1, 1, 2, 2, 1, 2]
+2025-09-28 00:19:39,198 - app.services.google_sheet_service - INFO - 参数已写入到表格: {'B6': 1, 'B7': 1, 'B9': 2, 'B10': 2, 'B11': 1, 'B12': 2}
+2025-09-28 00:20:00,199 - app.services.google_sheet_service - INFO - 第 1 次检查执行状态...
+2025-09-28 00:20:00,737 - app.services.google_sheet_client - INFO - 批量获取了 6 个单元格的值
+2025-09-28 00:20:00,737 - app.services.google_sheet_service - INFO - 所有参数执行完成，获取结果...
+2025-09-28 00:20:01,151 - app.services.google_sheet_client - INFO - 批量获取了 9 个单元格的值
+2025-09-28 00:20:01,151 - app.services.google_sheet_service - INFO - 执行结果: {'B6': 1, 'B7': 1, 'B9': 2, 'B10': 2, 'B11': 1, 'B12': 2, 'I15': '900.00%', 'I16': '800.00%', 'I17': '700.00%', 'I18': '1600.00%', 'I19': '2200.00%', 'I20': '2700.00%', 'I21': '4200.00%', 'I22': '6200.00%', 'I23': '8900.00%'}
+2025-09-28 00:20:01,152 - app.services.google_sheet_service - INFO - 任务 dc8ab27b-5761-4bd1-a23f-2043b0efc86b: 第 14 个参数组合执行成功，{'B6': 1, 'B7': 1, 'B9': 2, 'B10': 2, 'B11': 1, 'B12': 2, 'I15': '900.00%', 'I16': '800.00%', 'I17': '700.00%', 'I18': '1600.00%', 'I19': '2200.00%', 'I20': '2700.00%', 'I21': '4200.00%', 'I22': '6200.00%', 'I23': '8900.00%'}
+2025-09-28 00:20:01,167 - app.services.google_sheet_service - INFO - 第 14 个参数组合执行完成，成功: 14, 失败: 0
+2025-09-28 00:20:01,167 - app.services.google_sheet_service - INFO - 开始执行第 15/64 个参数组合
+2025-09-28 00:20:01,168 - app.services.google_sheet_service - INFO - 任务 dc8ab27b-5761-4bd1-a23f-2043b0efc86b: 正在执行第 15/64 个参数组合 [1, 1, 2, 2, 2, 1]
+2025-09-28 00:20:01,182 - app.services.google_sheet_service - INFO - 执行第 15 个参数组合: [1, 1, 2, 2, 2, 1]
+2025-09-28 00:20:01,494 - app.services.google_sheet_service - INFO - 参数已写入到表格: {'B6': 1, 'B7': 1, 'B9': 2, 'B10': 2, 'B11': 2, 'B12': 1}
+2025-09-28 00:20:24,494 - app.services.google_sheet_service - INFO - 第 1 次检查执行状态...
+2025-09-28 00:20:25,259 - app.services.google_sheet_client - INFO - 批量获取了 6 个单元格的值
+2025-09-28 00:20:25,259 - app.services.google_sheet_service - INFO - 所有参数执行完成，获取结果...
+2025-09-28 00:20:25,559 - app.services.google_sheet_client - INFO - 批量获取了 9 个单元格的值
+2025-09-28 00:20:25,559 - app.services.google_sheet_service - INFO - 执行结果: {'B6': 1, 'B7': 1, 'B9': 2, 'B10': 2, 'B11': 2, 'B12': 1, 'I15': '900.00%', 'I16': '800.00%', 'I17': '700.00%', 'I18': '1600.00%', 'I19': '2200.00%', 'I20': '2700.00%', 'I21': '4100.00%', 'I22': '6200.00%', 'I23': '8900.00%'}
+2025-09-28 00:20:25,560 - app.services.google_sheet_service - INFO - 任务 dc8ab27b-5761-4bd1-a23f-2043b0efc86b: 第 15 个参数组合执行成功，{'B6': 1, 'B7': 1, 'B9': 2, 'B10': 2, 'B11': 2, 'B12': 1, 'I15': '900.00%', 'I16': '800.00%', 'I17': '700.00%', 'I18': '1600.00%', 'I19': '2200.00%', 'I20': '2700.00%', 'I21': '4100.00%', 'I22': '6200.00%', 'I23': '8900.00%'}
+2025-09-28 00:20:25,574 - app.services.google_sheet_service - INFO - 第 15 个参数组合执行完成，成功: 15, 失败: 0
+2025-09-28 00:20:25,574 - app.services.google_sheet_service - INFO - 开始执行第 16/64 个参数组合
+2025-09-28 00:20:25,575 - app.services.google_sheet_service - INFO - 任务 dc8ab27b-5761-4bd1-a23f-2043b0efc86b: 正在执行第 16/64 个参数组合 [1, 1, 2, 2, 2, 2]
+2025-09-28 00:20:25,589 - app.services.google_sheet_service - INFO - 执行第 16 个参数组合: [1, 1, 2, 2, 2, 2]
+2025-09-28 00:20:25,902 - app.services.google_sheet_service - INFO - 参数已写入到表格: {'B6': 1, 'B7': 1, 'B9': 2, 'B10': 2, 'B11': 2, 'B12': 2}
+2025-09-28 00:20:51,902 - app.services.google_sheet_service - INFO - 第 1 次检查执行状态...
+2025-09-28 00:20:52,234 - app.services.google_sheet_client - INFO - 批量获取了 6 个单元格的值
+2025-09-28 00:20:52,234 - app.services.google_sheet_service - INFO - 所有参数执行完成，获取结果...
+2025-09-28 00:20:52,548 - app.services.google_sheet_client - INFO - 批量获取了 9 个单元格的值
+2025-09-28 00:20:52,548 - app.services.google_sheet_service - INFO - 执行结果: {'B6': 1, 'B7': 1, 'B9': 2, 'B10': 2, 'B11': 2, 'B12': 2, 'I15': '1000.00%', 'I16': '900.00%', 'I17': '800.00%', 'I18': '1800.00%', 'I19': '2500.00%', 'I20': '3100.00%', 'I21': '4700.00%', 'I22': '7000.00%', 'I23': '10100.00%'}
+2025-09-28 00:20:52,548 - app.services.google_sheet_service - INFO - 任务 dc8ab27b-5761-4bd1-a23f-2043b0efc86b: 第 16 个参数组合执行成功，{'B6': 1, 'B7': 1, 'B9': 2, 'B10': 2, 'B11': 2, 'B12': 2, 'I15': '1000.00%', 'I16': '900.00%', 'I17': '800.00%', 'I18': '1800.00%', 'I19': '2500.00%', 'I20': '3100.00%', 'I21': '4700.00%', 'I22': '7000.00%', 'I23': '10100.00%'}
+2025-09-28 00:20:52,564 - app.services.google_sheet_service - INFO - 第 16 个参数组合执行完成，成功: 16, 失败: 0
+2025-09-28 00:20:52,564 - app.services.google_sheet_service - INFO - 开始执行第 17/64 个参数组合
+2025-09-28 00:20:52,565 - app.services.google_sheet_service - INFO - 任务 dc8ab27b-5761-4bd1-a23f-2043b0efc86b: 正在执行第 17/64 个参数组合 [1, 2, 1, 1, 1, 1]
+2025-09-28 00:20:52,580 - app.services.google_sheet_service - INFO - 执行第 17 个参数组合: [1, 2, 1, 1, 1, 1]
+2025-09-28 00:20:52,901 - app.services.google_sheet_service - INFO - 参数已写入到表格: {'B6': 1, 'B7': 2, 'B9': 1, 'B10': 1, 'B11': 1, 'B12': 1}
+2025-09-28 00:21:13,901 - app.services.google_sheet_service - INFO - 第 1 次检查执行状态...
+2025-09-28 00:21:14,195 - app.services.google_sheet_client - INFO - 批量获取了 6 个单元格的值
+2025-09-28 00:21:14,195 - app.services.google_sheet_service - INFO - 所有参数执行完成，获取结果...
+2025-09-28 00:21:14,503 - app.services.google_sheet_client - INFO - 批量获取了 9 个单元格的值
+2025-09-28 00:21:14,503 - app.services.google_sheet_service - INFO - 执行结果: {'B6': 1, 'B7': 2, 'B9': 1, 'B10': 1, 'B11': 1, 'B12': 1, 'I15': '700.00%', 'I16': '600.00%', 'I17': '400.00%', 'I18': '1100.00%', 'I19': '1600.00%', 'I20': '1900.00%', 'I21': '2900.00%', 'I22': '4400.00%', 'I23': '6300.00%'}
+2025-09-28 00:21:14,503 - app.services.google_sheet_service - INFO - 任务 dc8ab27b-5761-4bd1-a23f-2043b0efc86b: 第 17 个参数组合执行成功，{'B6': 1, 'B7': 2, 'B9': 1, 'B10': 1, 'B11': 1, 'B12': 1, 'I15': '700.00%', 'I16': '600.00%', 'I17': '400.00%', 'I18': '1100.00%', 'I19': '1600.00%', 'I20': '1900.00%', 'I21': '2900.00%', 'I22': '4400.00%', 'I23': '6300.00%'}
+2025-09-28 00:21:14,517 - app.services.google_sheet_service - INFO - 第 17 个参数组合执行完成，成功: 17, 失败: 0
+2025-09-28 00:21:14,517 - app.services.google_sheet_service - INFO - 开始执行第 18/64 个参数组合
+2025-09-28 00:21:14,518 - app.services.google_sheet_service - INFO - 任务 dc8ab27b-5761-4bd1-a23f-2043b0efc86b: 正在执行第 18/64 个参数组合 [1, 2, 1, 1, 1, 2]
+2025-09-28 00:21:14,534 - app.services.google_sheet_service - INFO - 执行第 18 个参数组合: [1, 2, 1, 1, 1, 2]
+2025-09-28 00:21:14,858 - app.services.google_sheet_service - INFO - 参数已写入到表格: {'B6': 1, 'B7': 2, 'B9': 1, 'B10': 1, 'B11': 1, 'B12': 2}
+2025-09-28 00:21:36,859 - app.services.google_sheet_service - INFO - 第 1 次检查执行状态...
+2025-09-28 00:21:37,238 - app.services.google_sheet_client - INFO - 批量获取了 6 个单元格的值
+2025-09-28 00:21:37,238 - app.services.google_sheet_service - INFO - 所有参数执行完成，获取结果...
+2025-09-28 00:21:37,527 - app.services.google_sheet_client - INFO - 批量获取了 9 个单元格的值
+2025-09-28 00:21:37,527 - app.services.google_sheet_service - INFO - 执行结果: {'B6': 1, 'B7': 2, 'B9': 1, 'B10': 1, 'B11': 1, 'B12': 2, 'I15': '800.00%', 'I16': '700.00%', 'I17': '500.00%', 'I18': '1300.00%', 'I19': '1900.00%', 'I20': '2300.00%', 'I21': '3500.00%', 'I22': '5200.00%', 'I23': '7500.00%'}
+2025-09-28 00:21:37,527 - app.services.google_sheet_service - INFO - 任务 dc8ab27b-5761-4bd1-a23f-2043b0efc86b: 第 18 个参数组合执行成功，{'B6': 1, 'B7': 2, 'B9': 1, 'B10': 1, 'B11': 1, 'B12': 2, 'I15': '800.00%', 'I16': '700.00%', 'I17': '500.00%', 'I18': '1300.00%', 'I19': '1900.00%', 'I20': '2300.00%', 'I21': '3500.00%', 'I22': '5200.00%', 'I23': '7500.00%'}
+2025-09-28 00:21:37,543 - app.services.google_sheet_service - INFO - 第 18 个参数组合执行完成，成功: 18, 失败: 0
+2025-09-28 00:21:37,543 - app.services.google_sheet_service - INFO - 开始执行第 19/64 个参数组合
+2025-09-28 00:21:37,544 - app.services.google_sheet_service - INFO - 任务 dc8ab27b-5761-4bd1-a23f-2043b0efc86b: 正在执行第 19/64 个参数组合 [1, 2, 1, 1, 2, 1]
+2025-09-28 00:21:37,560 - app.services.google_sheet_service - INFO - 执行第 19 个参数组合: [1, 2, 1, 1, 2, 1]
+2025-09-28 00:21:37,873 - app.services.google_sheet_service - INFO - 参数已写入到表格: {'B6': 1, 'B7': 2, 'B9': 1, 'B10': 1, 'B11': 2, 'B12': 1}
+2025-09-28 00:22:03,874 - app.services.google_sheet_service - INFO - 第 1 次检查执行状态...
+2025-09-28 00:22:04,486 - app.services.google_sheet_client - INFO - 批量获取了 6 个单元格的值
+2025-09-28 00:22:04,486 - app.services.google_sheet_service - INFO - 所有参数执行完成，获取结果...
+2025-09-28 00:22:04,784 - app.services.google_sheet_client - INFO - 批量获取了 9 个单元格的值
+2025-09-28 00:22:04,784 - app.services.google_sheet_service - INFO - 执行结果: {'B6': 1, 'B7': 2, 'B9': 1, 'B10': 1, 'B11': 2, 'B12': 1, 'I15': '800.00%', 'I16': '700.00%', 'I17': '500.00%', 'I18': '1300.00%', 'I19': '1900.00%', 'I20': '2300.00%', 'I21': '3400.00%', 'I22': '5200.00%', 'I23': '7500.00%'}
+2025-09-28 00:22:04,785 - app.services.google_sheet_service - INFO - 任务 dc8ab27b-5761-4bd1-a23f-2043b0efc86b: 第 19 个参数组合执行成功，{'B6': 1, 'B7': 2, 'B9': 1, 'B10': 1, 'B11': 2, 'B12': 1, 'I15': '800.00%', 'I16': '700.00%', 'I17': '500.00%', 'I18': '1300.00%', 'I19': '1900.00%', 'I20': '2300.00%', 'I21': '3400.00%', 'I22': '5200.00%', 'I23': '7500.00%'}
+2025-09-28 00:22:04,800 - app.services.google_sheet_service - INFO - 第 19 个参数组合执行完成，成功: 19, 失败: 0
+2025-09-28 00:22:04,800 - app.services.google_sheet_service - INFO - 开始执行第 20/64 个参数组合
+2025-09-28 00:22:04,801 - app.services.google_sheet_service - INFO - 任务 dc8ab27b-5761-4bd1-a23f-2043b0efc86b: 正在执行第 20/64 个参数组合 [1, 2, 1, 1, 2, 2]
+2025-09-28 00:22:04,815 - app.services.google_sheet_service - INFO - 执行第 20 个参数组合: [1, 2, 1, 1, 2, 2]
+2025-09-28 00:22:05,141 - app.services.google_sheet_service - INFO - 参数已写入到表格: {'B6': 1, 'B7': 2, 'B9': 1, 'B10': 1, 'B11': 2, 'B12': 2}
+2025-09-28 00:22:31,142 - app.services.google_sheet_service - INFO - 第 1 次检查执行状态...
+2025-09-28 00:22:31,735 - app.services.google_sheet_client - INFO - 批量获取了 6 个单元格的值
+2025-09-28 00:22:31,735 - app.services.google_sheet_service - INFO - 所有参数执行完成，获取结果...
+2025-09-28 00:22:32,028 - app.services.google_sheet_client - INFO - 批量获取了 9 个单元格的值
+2025-09-28 00:22:32,028 - app.services.google_sheet_service - INFO - 执行结果: {'B6': 1, 'B7': 2, 'B9': 1, 'B10': 1, 'B11': 2, 'B12': 2, 'I15': '900.00%', 'I16': '800.00%', 'I17': '600.00%', 'I18': '1500.00%', 'I19': '2200.00%', 'I20': '2700.00%', 'I21': '4000.00%', 'I22': '6000.00%', 'I23': '8700.00%'}
+2025-09-28 00:22:32,029 - app.services.google_sheet_service - INFO - 任务 dc8ab27b-5761-4bd1-a23f-2043b0efc86b: 第 20 个参数组合执行成功，{'B6': 1, 'B7': 2, 'B9': 1, 'B10': 1, 'B11': 2, 'B12': 2, 'I15': '900.00%', 'I16': '800.00%', 'I17': '600.00%', 'I18': '1500.00%', 'I19': '2200.00%', 'I20': '2700.00%', 'I21': '4000.00%', 'I22': '6000.00%', 'I23': '8700.00%'}
+2025-09-28 00:22:32,044 - app.services.google_sheet_service - INFO - 第 20 个参数组合执行完成，成功: 20, 失败: 0
+2025-09-28 00:22:32,044 - app.services.google_sheet_service - INFO - 开始执行第 21/64 个参数组合
+2025-09-28 00:22:32,045 - app.services.google_sheet_service - INFO - 任务 dc8ab27b-5761-4bd1-a23f-2043b0efc86b: 正在执行第 21/64 个参数组合 [1, 2, 1, 2, 1, 1]
+2025-09-28 00:22:32,059 - app.services.google_sheet_service - INFO - 执行第 21 个参数组合: [1, 2, 1, 2, 1, 1]
+2025-09-28 00:22:32,386 - app.services.google_sheet_service - INFO - 参数已写入到表格: {'B6': 1, 'B7': 2, 'B9': 1, 'B10': 2, 'B11': 1, 'B12': 1}
+2025-09-28 00:23:00,386 - app.services.google_sheet_service - INFO - 第 1 次检查执行状态...
+2025-09-28 00:23:00,931 - app.services.google_sheet_client - INFO - 批量获取了 6 个单元格的值
+2025-09-28 00:23:00,931 - app.services.google_sheet_service - INFO - 所有参数执行完成，获取结果...
+2025-09-28 00:23:01,309 - app.services.google_sheet_client - INFO - 批量获取了 9 个单元格的值
+2025-09-28 00:23:01,309 - app.services.google_sheet_service - INFO - 执行结果: {'B6': 1, 'B7': 2, 'B9': 1, 'B10': 2, 'B11': 1, 'B12': 1, 'I15': '800.00%', 'I16': '700.00%', 'I17': '500.00%', 'I18': '1300.00%', 'I19': '1900.00%', 'I20': '2200.00%', 'I21': '3400.00%', 'I22': '5200.00%', 'I23': '7400.00%'}
+2025-09-28 00:23:01,309 - app.services.google_sheet_service - INFO - 任务 dc8ab27b-5761-4bd1-a23f-2043b0efc86b: 第 21 个参数组合执行成功，{'B6': 1, 'B7': 2, 'B9': 1, 'B10': 2, 'B11': 1, 'B12': 1, 'I15': '800.00%', 'I16': '700.00%', 'I17': '500.00%', 'I18': '1300.00%', 'I19': '1900.00%', 'I20': '2200.00%', 'I21': '3400.00%', 'I22': '5200.00%', 'I23': '7400.00%'}
+2025-09-28 00:23:01,323 - app.services.google_sheet_service - INFO - 第 21 个参数组合执行完成，成功: 21, 失败: 0
+2025-09-28 00:23:01,323 - app.services.google_sheet_service - INFO - 开始执行第 22/64 个参数组合
+2025-09-28 00:23:01,324 - app.services.google_sheet_service - INFO - 任务 dc8ab27b-5761-4bd1-a23f-2043b0efc86b: 正在执行第 22/64 个参数组合 [1, 2, 1, 2, 1, 2]
+2025-09-28 00:23:01,341 - app.services.google_sheet_service - INFO - 执行第 22 个参数组合: [1, 2, 1, 2, 1, 2]
+2025-09-28 00:23:01,658 - app.services.google_sheet_service - INFO - 参数已写入到表格: {'B6': 1, 'B7': 2, 'B9': 1, 'B10': 2, 'B11': 1, 'B12': 2}
+2025-09-28 00:23:31,658 - app.services.google_sheet_service - INFO - 第 1 次检查执行状态...
+2025-09-28 00:23:31,989 - app.services.google_sheet_client - INFO - 批量获取了 6 个单元格的值
+2025-09-28 00:23:31,989 - app.services.google_sheet_service - INFO - 所有参数执行完成，获取结果...
+2025-09-28 00:23:32,284 - app.services.google_sheet_client - INFO - 批量获取了 9 个单元格的值
+2025-09-28 00:23:32,284 - app.services.google_sheet_service - INFO - 执行结果: {'B6': 1, 'B7': 2, 'B9': 1, 'B10': 2, 'B11': 1, 'B12': 2, 'I15': '900.00%', 'I16': '800.00%', 'I17': '600.00%', 'I18': '1500.00%', 'I19': '2200.00%', 'I20': '2600.00%', 'I21': '4000.00%', 'I22': '6000.00%', 'I23': '8600.00%'}
+2025-09-28 00:23:32,285 - app.services.google_sheet_service - INFO - 任务 dc8ab27b-5761-4bd1-a23f-2043b0efc86b: 第 22 个参数组合执行成功，{'B6': 1, 'B7': 2, 'B9': 1, 'B10': 2, 'B11': 1, 'B12': 2, 'I15': '900.00%', 'I16': '800.00%', 'I17': '600.00%', 'I18': '1500.00%', 'I19': '2200.00%', 'I20': '2600.00%', 'I21': '4000.00%', 'I22': '6000.00%', 'I23': '8600.00%'}
+2025-09-28 00:23:32,299 - app.services.google_sheet_service - INFO - 第 22 个参数组合执行完成，成功: 22, 失败: 0
+2025-09-28 00:23:32,299 - app.services.google_sheet_service - INFO - 开始执行第 23/64 个参数组合
+2025-09-28 00:23:32,300 - app.services.google_sheet_service - INFO - 任务 dc8ab27b-5761-4bd1-a23f-2043b0efc86b: 正在执行第 23/64 个参数组合 [1, 2, 1, 2, 2, 1]
+2025-09-28 00:23:32,315 - app.services.google_sheet_service - INFO - 执行第 23 个参数组合: [1, 2, 1, 2, 2, 1]
+2025-09-28 00:33:38,997 - app.services.task_manager - INFO - 取消任务: dc8ab27b-5761-4bd1-a23f-2043b0efc86b
+2025-09-28 00:34:02,736 - app.services.task_manager - INFO - 创建任务: 4d84a0db-2bc5-4385-8d56-6e3890593dee - Google Sheet 任务 - 2025/9/28 00:34:02
+2025-09-28 00:34:02,737 - app.services.task_manager - INFO - 启动任务: 4d84a0db-2bc5-4385-8d56-6e3890593dee
+2025-09-28 00:34:02,755 - app.services.config_manager - INFO - 加载了 9 个配置项
+2025-09-28 00:34:02,755 - app.services.google_sheet_service - INFO - 任务 4d84a0db-2bc5-4385-8d56-6e3890593dee: 开始执行Google Sheet任务
+2025-09-28 00:34:02,764 - app.services.google_sheet_service - INFO - 开始初始化Google Sheet连接
+2025-09-28 00:34:02,765 - app.services.google_sheet_service - INFO - 连接参数 - Spreadsheet ID: 1e2K0pR1roc1Uo7zVy7oo6nIMD9hiRCAFfgznl8zFpeo, Sheet: data1y, Token: data/token.json
+2025-09-28 00:34:05,400 - app.services.google_sheet_client - INFO - Google Sheet连接成功: 1e2K0pR1roc1Uo7zVy7oo6nIMD9hiRCAFfgznl8zFpeo/data1y
+2025-09-28 00:34:05,400 - app.services.google_sheet_service - INFO - Google Sheet连接初始化成功
+2025-09-28 00:34:06,486 - app.services.google_sheet_service - INFO - 任务 4d84a0db-2bc5-4385-8d56-6e3890593dee: 将执行 64 个参数组合
+2025-09-28 00:34:06,496 - app.services.google_sheet_service - INFO - 开始执行第 1/64 个参数组合
+2025-09-28 00:34:06,497 - app.services.google_sheet_service - INFO - 任务 4d84a0db-2bc5-4385-8d56-6e3890593dee: 正在执行第 1/64 个参数组合 [1, 1, 1, 1, 1, 1]
+2025-09-28 00:34:06,514 - app.services.google_sheet_service - INFO - 执行第 1 个参数组合: [1, 1, 1, 1, 1, 1]
+2025-09-28 00:34:07,051 - app.services.google_sheet_service - INFO - 参数已写入到表格: {'B6': 1, 'B7': 1, 'B9': 1, 'B10': 1, 'B11': 1, 'B12': 1}
+2025-09-28 00:34:28,052 - app.services.google_sheet_service - INFO - 第 1 次检查执行状态...
+2025-09-28 00:34:28,450 - app.services.google_sheet_client - INFO - 批量获取了 6 个单元格的值
+2025-09-28 00:34:28,450 - app.services.google_sheet_service - INFO - 所有参数执行完成，获取结果...
+2025-09-28 00:34:28,824 - app.services.google_sheet_client - INFO - 批量获取了 9 个单元格的值
+2025-09-28 00:34:28,824 - app.services.google_sheet_service - INFO - 执行结果: {'B6': 1, 'B7': 1, 'B9': 1, 'B10': 1, 'B11': 1, 'B12': 1, 'I15': '600.00%', 'I16': '500.00%', 'I17': '400.00%', 'I18': '1000.00%', 'I19': '1400.00%', 'I20': '1700.00%', 'I21': '2600.00%', 'I22': '3900.00%', 'I23': '5600.00%'}
+2025-09-28 00:34:28,825 - app.services.google_sheet_service - INFO - 任务 4d84a0db-2bc5-4385-8d56-6e3890593dee: 第 1 个参数组合执行成功，{'B6': 1, 'B7': 1, 'B9': 1, 'B10': 1, 'B11': 1, 'B12': 1, 'I15': '600.00%', 'I16': '500.00%', 'I17': '400.00%', 'I18': '1000.00%', 'I19': '1400.00%', 'I20': '1700.00%', 'I21': '2600.00%', 'I22': '3900.00%', 'I23': '5600.00%'}
+2025-09-28 00:34:28,838 - app.services.google_sheet_service - INFO - 第 1 个参数组合执行完成，成功: 1, 失败: 0
+2025-09-28 00:34:28,838 - app.services.google_sheet_service - INFO - 开始执行第 2/64 个参数组合
+2025-09-28 00:34:28,839 - app.services.google_sheet_service - INFO - 任务 4d84a0db-2bc5-4385-8d56-6e3890593dee: 正在执行第 2/64 个参数组合 [1, 1, 1, 1, 1, 6]
+2025-09-28 00:34:28,854 - app.services.google_sheet_service - INFO - 执行第 2 个参数组合: [1, 1, 1, 1, 1, 6]
+2025-09-28 00:34:29,204 - app.services.google_sheet_service - INFO - 参数已写入到表格: {'B6': 1, 'B7': 1, 'B9': 1, 'B10': 1, 'B11': 1, 'B12': 6}
+2025-09-28 00:34:50,204 - app.services.google_sheet_service - INFO - 第 1 次检查执行状态...
+2025-09-28 00:34:50,551 - app.services.google_sheet_client - INFO - 批量获取了 6 个单元格的值
+2025-09-28 00:34:50,551 - app.services.google_sheet_service - INFO - 所有参数执行完成，获取结果...
+2025-09-28 00:34:50,881 - app.services.google_sheet_client - INFO - 批量获取了 9 个单元格的值
+2025-09-28 00:34:50,881 - app.services.google_sheet_service - INFO - 执行结果: {'B6': 1, 'B7': 1, 'B9': 1, 'B10': 1, 'B11': 1, 'B12': 6, 'I15': '1100.00%', 'I16': '1000.00%', 'I17': '900.00%', 'I18': '2000.00%', 'I19': '2900.00%', 'I20': '3700.00%', 'I21': '5600.00%', 'I22': '7900.00%', 'I23': '11600.00%'}
+2025-09-28 00:34:50,881 - app.services.google_sheet_service - INFO - 任务 4d84a0db-2bc5-4385-8d56-6e3890593dee: 第 2 个参数组合执行成功，{'B6': 1, 'B7': 1, 'B9': 1, 'B10': 1, 'B11': 1, 'B12': 6, 'I15': '1100.00%', 'I16': '1000.00%', 'I17': '900.00%', 'I18': '2000.00%', 'I19': '2900.00%', 'I20': '3700.00%', 'I21': '5600.00%', 'I22': '7900.00%', 'I23': '11600.00%'}
+2025-09-28 00:34:50,897 - app.services.google_sheet_service - INFO - 第 2 个参数组合执行完成，成功: 2, 失败: 0
+2025-09-28 00:34:50,897 - app.services.google_sheet_service - INFO - 开始执行第 3/64 个参数组合
+2025-09-28 00:34:50,897 - app.services.google_sheet_service - INFO - 任务 4d84a0db-2bc5-4385-8d56-6e3890593dee: 正在执行第 3/64 个参数组合 [1, 1, 1, 1, 6, 1]
+2025-09-28 00:34:50,913 - app.services.google_sheet_service - INFO - 执行第 3 个参数组合: [1, 1, 1, 1, 6, 1]
+2025-09-28 00:34:51,265 - app.services.google_sheet_service - INFO - 参数已写入到表格: {'B6': 1, 'B7': 1, 'B9': 1, 'B10': 1, 'B11': 6, 'B12': 1}
+2025-09-28 00:35:15,265 - app.services.google_sheet_service - INFO - 第 1 次检查执行状态...
+2025-09-28 00:35:15,880 - app.services.google_sheet_client - INFO - 批量获取了 6 个单元格的值
+2025-09-28 00:35:15,880 - app.services.google_sheet_service - INFO - 所有参数执行完成，获取结果...
+2025-09-28 00:35:16,428 - app.services.google_sheet_client - INFO - 批量获取了 9 个单元格的值
+2025-09-28 00:35:16,428 - app.services.google_sheet_service - INFO - 执行结果: {'B6': 1, 'B7': 1, 'B9': 1, 'B10': 1, 'B11': 6, 'B12': 1, 'I15': '1100.00%', 'I16': '1000.00%', 'I17': '900.00%', 'I18': '2000.00%', 'I19': '2900.00%', 'I20': '3700.00%', 'I21': '5100.00%', 'I22': '7900.00%', 'I23': '11600.00%'}
+2025-09-28 00:35:16,428 - app.services.google_sheet_service - INFO - 任务 4d84a0db-2bc5-4385-8d56-6e3890593dee: 第 3 个参数组合执行成功，{'B6': 1, 'B7': 1, 'B9': 1, 'B10': 1, 'B11': 6, 'B12': 1, 'I15': '1100.00%', 'I16': '1000.00%', 'I17': '900.00%', 'I18': '2000.00%', 'I19': '2900.00%', 'I20': '3700.00%', 'I21': '5100.00%', 'I22': '7900.00%', 'I23': '11600.00%'}
+2025-09-28 00:35:16,443 - app.services.google_sheet_service - INFO - 第 3 个参数组合执行完成，成功: 3, 失败: 0
+2025-09-28 00:35:16,443 - app.services.google_sheet_service - INFO - 开始执行第 4/64 个参数组合
+2025-09-28 00:35:16,444 - app.services.google_sheet_service - INFO - 任务 4d84a0db-2bc5-4385-8d56-6e3890593dee: 正在执行第 4/64 个参数组合 [1, 1, 1, 1, 6, 6]
+2025-09-28 00:35:16,457 - app.services.google_sheet_service - INFO - 执行第 4 个参数组合: [1, 1, 1, 1, 6, 6]
+2025-09-28 00:35:16,812 - app.services.google_sheet_service - INFO - 参数已写入到表格: {'B6': 1, 'B7': 1, 'B9': 1, 'B10': 1, 'B11': 6, 'B12': 6}
+2025-09-28 00:35:37,812 - app.services.google_sheet_service - INFO - 第 1 次检查执行状态...
+2025-09-28 00:35:38,378 - app.services.google_sheet_client - INFO - 批量获取了 6 个单元格的值
+2025-09-28 00:35:38,378 - app.services.google_sheet_service - INFO - 所有参数执行完成，获取结果...
+2025-09-28 00:35:38,761 - app.services.google_sheet_client - INFO - 批量获取了 9 个单元格的值
+2025-09-28 00:35:38,761 - app.services.google_sheet_service - INFO - 执行结果: {'B6': 1, 'B7': 1, 'B9': 1, 'B10': 1, 'B11': 6, 'B12': 6, 'I15': '1600.00%', 'I16': '1500.00%', 'I17': '1400.00%', 'I18': '3000.00%', 'I19': '4400.00%', 'I20': '5700.00%', 'I21': '8100.00%', 'I22': '11900.00%', 'I23': '17600.00%'}
+2025-09-28 00:35:38,761 - app.services.google_sheet_service - INFO - 任务 4d84a0db-2bc5-4385-8d56-6e3890593dee: 第 4 个参数组合执行成功，{'B6': 1, 'B7': 1, 'B9': 1, 'B10': 1, 'B11': 6, 'B12': 6, 'I15': '1600.00%', 'I16': '1500.00%', 'I17': '1400.00%', 'I18': '3000.00%', 'I19': '4400.00%', 'I20': '5700.00%', 'I21': '8100.00%', 'I22': '11900.00%', 'I23': '17600.00%'}
+2025-09-28 00:35:38,776 - app.services.google_sheet_service - INFO - 第 4 个参数组合执行完成，成功: 4, 失败: 0
+2025-09-28 00:35:38,776 - app.services.google_sheet_service - INFO - 开始执行第 5/64 个参数组合
+2025-09-28 00:35:38,777 - app.services.google_sheet_service - INFO - 任务 4d84a0db-2bc5-4385-8d56-6e3890593dee: 正在执行第 5/64 个参数组合 [1, 1, 1, 6, 1, 1]
+2025-09-28 00:35:38,791 - app.services.google_sheet_service - INFO - 执行第 5 个参数组合: [1, 1, 1, 6, 1, 1]
+2025-09-28 00:35:39,504 - app.services.google_sheet_service - INFO - 参数已写入到表格: {'B6': 1, 'B7': 1, 'B9': 1, 'B10': 6, 'B11': 1, 'B12': 1}
+2025-09-28 01:10:54,372 - app.services.task_manager - INFO - 取消任务: 4d84a0db-2bc5-4385-8d56-6e3890593dee
