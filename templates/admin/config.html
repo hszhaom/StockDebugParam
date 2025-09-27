@@ -159,21 +159,33 @@
                     <div class="col-md-6">
                         <h6>配置示例</h6>
                         <pre class="bg-light p-3 small"><code>{
-  "parameter_positions": {
-    "param1": "B6",
-    "param2": "B7",
-    "param3": "B8"
-  },
-  "check_positions": {
-    "check1": "I6",
-    "check2": "I7",
-    "check3": "I8"
-  },
-  "result_positions": {
-    "result1": "I15",
-    "result2": "I16",
-    "result3": "I17"
-  }
+  "parameter_positions": [
+    "B6",
+    "B7",
+    "B9",
+    "B10",
+    "B11",
+    "B12"
+  ],
+  "check_positions": [
+    "I6",
+    "I7",
+    "I9",
+    "I10",
+    "I11",
+    "I12"
+  ],
+  "result_positions": [
+    "I15",
+    "I16",
+    "I17",
+    "I18",
+    "I19",
+    "I20",
+    "I21",
+    "I22",
+    "I23"
+  ]
 }</code></pre>
                     </div>
                 </div>
@@ -223,7 +235,7 @@
 
     function generatePositionConfigs(config) {
         // 生成参数位置配置
-        const paramPositions = config.parameter_positions || {};
+        const paramPositions = config.parameter_positions || [];
         const paramContainer = document.getElementById('parameter-positions');
         paramContainer.innerHTML = '';
         
@@ -233,14 +245,14 @@
             div.innerHTML = `
                 <label class="form-label small">参数${i}</label>
                 <input type="text" class="form-control form-control-sm" 
-                       id="param${i}_pos" value="${paramPositions[`param${i}`] || ''}" 
+                       id="param${i}_pos" value="${paramPositions[i-1] || ''}" 
                        placeholder="B${5+i}">
             `;
             paramContainer.appendChild(div);
         }
         
         // 生成检查位置配置
-        const checkPositions = config.check_positions || {};
+        const checkPositions = config.check_positions || [];
         const checkContainer = document.getElementById('check-positions');
         checkContainer.innerHTML = '';
         
@@ -250,14 +262,14 @@
             div.innerHTML = `
                 <label class="form-label small">检查${i}</label>
                 <input type="text" class="form-control form-control-sm" 
-                       id="check${i}_pos" value="${checkPositions[`check${i}`] || ''}" 
+                       id="check${i}_pos" value="${checkPositions[i-1] || ''}" 
                        placeholder="I${5+i}">
             `;
             checkContainer.appendChild(div);
         }
         
         // 生成结果位置配置
-        const resultPositions = config.result_positions || {};
+        const resultPositions = config.result_positions || [];
         const resultContainer = document.getElementById('result-positions');
         resultContainer.innerHTML = '';
         
@@ -267,7 +279,7 @@
             div.innerHTML = `
                 <label class="form-label small">结果${i}</label>
                 <input type="text" class="form-control form-control-sm" 
-                       id="result${i}_pos" value="${resultPositions[`result${i}`] || ''}" 
+                       id="result${i}_pos" value="${resultPositions[i-1] || ''}" 
                        placeholder="I${14+i}">
             `;
             resultContainer.appendChild(div);
@@ -287,18 +299,18 @@
             };
             
             // 收集位置配置
-            const parameter_positions = {};
-            const check_positions = {};
-            const result_positions = {};
+            const parameter_positions = [];
+            const check_positions = [];
+            const result_positions = [];
             
             for (let i = 1; i <= 6; i++) {
                 const paramPos = document.getElementById(`param${i}_pos`).value;
                 const checkPos = document.getElementById(`check${i}_pos`).value;
                 const resultPos = document.getElementById(`result${i}_pos`).value;
                 
-                if (paramPos) parameter_positions[`param${i}`] = paramPos;
-                if (checkPos) check_positions[`check${i}`] = checkPos;
-                if (resultPos) result_positions[`result${i}`] = resultPos;
+                if (paramPos) parameter_positions.push(paramPos);
+                if (checkPos) check_positions.push(checkPos);
+                if (resultPos) result_positions.push(resultPos);
             }
             
             config.parameter_positions = parameter_positions;

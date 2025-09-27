@@ -152,23 +152,94 @@ class GoogleSheet:
         if not self.worksheet:
             raise Exception("请先选择工作表")
 
+        # 检查cell_updates是否为空
+        if not cell_updates:
+            logger.warning("cell_updates为空，跳过更新操作")
+            return None
+
         try:
             # 创建Cell对象列表
             cells = []
             for cell_address, value in cell_updates.items():
+                # 验证单元格地址格式
+                if not cell_address or not isinstance(cell_address, str):
+                    logger.warning(f"无效的单元格地址: {cell_address}")
+                    continue
+                
                 # 将A1表示法转换为行列号
                 row, col = gspread.utils.a1_to_rowcol(cell_address)
                 cells.append(Cell(row, col, value))
+
+            # 如果没有有效的单元格，直接返回
+            if not cells:
+                logger.warning("没有有效的单元格需要更新")
+                return None
 
             # 批量更新单元格
             return self.worksheet.update_cells(cells)
 
         except Exception as e:
-            logger.error(f"更新跳跃单元格失败: {e}")
+            logger.error(f"更新跳跃单元格失败: {e}", exc_info=True)
+            return None
 
     def get_cell(self, cell_ref):
         """获取指定单元格的值"""
         return self.worksheet.get(cell_ref)[0][0]
+
+    def get_cells_batch(self, cell_refs):
+        """
+        批量获取多个单元格的值
+        
+        Args:
+            cell_refs: 单元格引用列表，例如 ['A1', 'B2', 'C3']
+            
+        Returns:
+            字典，格式为 {单元格地址: 值}
+        """
+        if not self.worksheet:
+            raise Exception("请先选择工作表")
+        
+        if not cell_refs:
+            logger.warning("cell_refs为空，返回空字典")
+            return {}
+        
+        try:
+            # 构建批量获取的单元格范围
+            # 如果单元格不连续，我们需要分别获取每个单元格
+            results = {}
+            
+            # 使用 batch_get 方法批量获取
+            # 将单个单元格引用转换为范围格式
+            ranges = [f"{ref}" for ref in cell_refs]
+            
+            # 批量获取值
+            batch_values = self.worksheet.batch_get(ranges)
+            
+            # 将结果转换为字典格式
+            for i, cell_ref in enumerate(cell_refs):
+                if i < len(batch_values) and batch_values[i]:
+                    # batch_values[i] 是一个列表，包含该单元格的值
+                    value = batch_values[i][0][0] if batch_values[i][0] else ""
+                    results[cell_ref] = value
+                else:
+                    results[cell_ref] = ""
+            
+            logger.info(f"批量获取了 {len(results)} 个单元格的值")
+            return results
+            
+        except Exception as e:
+            logger.error(f"批量获取单元格失败: {e}", exc_info=True)
+            # 如果批量获取失败，回退到逐个获取
+            logger.info("回退到逐个获取单元格值")
+            results = {}
+            for cell_ref in cell_refs:
+                try:
+                    value = self.get_cell(cell_ref)
+                    results[cell_ref] = value
+                except Exception as cell_error:
+                    logger.error(f"获取单元格 {cell_ref} 失败: {cell_error}")
+                    results[cell_ref] = ""
+            return results
 
     def get_trade_count_with_retry(self, cell_ref, max_retries=10, delay=30):
         """带重试机制获取交易数量"""

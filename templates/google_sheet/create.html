@@ -663,13 +663,7 @@
             
             if (!err && data && data.status === 'success') {
                 currentTaskId = data.task_id;
-                showNotification('任务创建成功', 'success');
-                
-                // 开始监听SSE事件
-                startEventListening(currentTaskId);
-                
-                // 直接显示任务状态模态框
-                showTaskStatusModal();
+                showNotification('任务创建成功，正在跳转到详情页面...', 'success');
                 
                 // 清空表单
                 document.getElementById('parameter-form').reset();
@@ -677,64 +671,24 @@
                 document.getElementById('combination-info').style.display = 'none';
                 // 清除保存的表单数据
                 clearSavedFormData();
+                
+                // 延迟1秒后跳转到详情页面
+                setTimeout(function() {
+                    window.location.href = `{{ url_for('google_sheet.detail') }}?task_id=${currentTaskId}`;
+                }, 1000);
             } else {
                 showNotification('创建任务失败: ' + (data ? data.message : '未知错误'), 'error');
             }
         });
     }
 
-    // 开始监听SSE事件
-    function startEventListening(taskId) {
-        // 关闭现有连接
-        if (eventSource) {
-            eventSource.close();
-            eventSource = null;
-        }
-        
-        console.log(`开始监听任务 ${taskId} 的SSE事件`);
-        eventSource = new EventSource(`/api/tasks/${taskId}/events`);
-        
-        eventSource.onopen = function(event) {
-            console.log('SSE连接已建立');
-        };
-        
-        eventSource.onmessage = function(event) {
-            try {
-                const data = JSON.parse(event.data);
-                console.log('收到SSE事件:', data);
-                handleTaskEvent(data);
-            } catch (e) {
-                console.error('解析SSE事件数据失败:', e);
-            }
-        };
-        
-        eventSource.onerror = function(err) {
-            console.error('SSE连接错误:', err);
-            console.log('SSE连接状态:', eventSource.readyState);
-            
-            // 如果连接关闭，尝试重连
-            if (eventSource.readyState === EventSource.CLOSED) {
-                console.log('SSE连接已关闭，尝试重连...');
-                setTimeout(() => {
-                    if (currentTaskId) {
-                        startEventListening(currentTaskId);
-                    }
-                }, 3000); // 3秒后重连
-            }
-        };
-    }
+    // SSE相关功能已移除，任务创建后直接跳转到详情页面
 
-    // 处理任务事件
+    // 处理任务事件（保留以备将来使用）
     function handleTaskEvent(event) {
-        if (event.type === 'first_execution_complete') {
-            // 跳过确认，直接显示任务状态模态框
-            console.log('第一次执行完成，直接显示任务状态');
-            showTaskStatusModal();
-        } else if (event.type === 'log_update') {
+        if (event.type === 'log_update') {
             // 处理实时日志更新
             console.log('收到日志更新:', event.data);
-            // 这里可以实时更新任务状态模态框中的日志
-            updateTaskStatusLog(event.data);
         } else if (event.type === 'heartbeat') {
             // 心跳包，无需处理
         } else if (event.type === 'error') {
@@ -742,122 +696,13 @@
         }
     }
     
-    // 更新任务状态日志
-    function updateTaskStatusLog(logData) {
-        const statusMessage = document.getElementById('task-status-message');
-        if (statusMessage) {
-            const timestamp = new Date(logData.timestamp).toLocaleString('zh-CN');
-            const logEntry = document.createElement('div');
-            logEntry.className = `small ${logData.level === 'error' ? 'text-danger' : 
-                                         logData.level === 'warning' ? 'text-warning' : 'text-info'}`;
-            logEntry.textContent = `[${timestamp}] ${logData.message}`;
-            statusMessage.appendChild(logEntry);
-            
-            // 保持滚动到底部
-            statusMessage.scrollTop = statusMessage.scrollHeight;
-        }
-    }
+    // 任务状态日志更新功能已移除
 
-    // 确认继续执行
-    document.getElementById('confirm-continue').addEventListener('click', function() {
-        if (currentTaskId) {
-            // 发送确认请求
-            ajaxRequest(`/api/tasks/${currentTaskId}/confirm`, 'POST', {confirmed: true}, function(err, data) {
-                if (!err && data && data.status === 'success') {
-                    // 关闭确认模态框
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('confirmModal'));
-                    modal.hide();
-                    
-                    // 显示任务状态模态框
-                    showTaskStatusModal();
-                } else {
-                    showNotification('确认失败: ' + (data ? data.message : '未知错误'), 'error');
-                }
-            });
-        }
-    });
+    // 确认和取消执行功能已移除，任务创建后直接跳转到详情页面
 
-    // 停止执行
-    document.getElementById('cancel-execution').addEventListener('click', function() {
-        if (currentTaskId) {
-            // 发送确认请求（拒绝）
-            ajaxRequest(`/api/tasks/${currentTaskId}/confirm`, 'POST', {confirmed: false}, function(err, data) {
-                if (!err && data && data.status === 'success') {
-                    // 关闭确认模态框
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('confirmModal'));
-                    modal.hide();
-                    
-                    showNotification('已停止执行任务', 'success');
-                } else {
-                    showNotification('确认失败: ' + (data ? data.message : '未知错误'), 'error');
-                }
-            });
-        }
-    });
+    // 任务状态模态框功能已移除，任务创建后直接跳转到详情页面
 
-    // 显示任务状态模态框
-    function showTaskStatusModal() {
-        const modal = new bootstrap.Modal(document.getElementById('taskStatusModal'));
-        modal.show();
-        
-        // 初始化日志显示区域
-        const statusMessage = document.getElementById('task-status-message');
-        statusMessage.innerHTML = '<div class="text-info">正在启动任务...</div>';
-        
-        // 定时更新任务状态
-        const statusInterval = setInterval(function() {
-            if (currentTaskId) {
-                ajaxRequest(`/api/tasks/${currentTaskId}`, 'GET', null, function(err, data) {
-                    if (!err && data && data.task) {
-                        const task = data.task;
-                        const progressPercent = task.total_steps > 0 ? 
-                            Math.round((task.current_step / task.total_steps) * 100) : 0;
-                        
-                        document.getElementById('task-progress-bar').style.width = progressPercent + '%';
-                        document.getElementById('task-progress-bar').textContent = progressPercent + '%';
-                        
-                        // 如果任务完成，显示查看任务按钮
-                        if (task.status === 'completed' || task.status === 'error') {
-                            clearInterval(statusInterval);
-                            document.getElementById('view-task-btn').style.display = 'inline-block';
-                            document.getElementById('view-task-btn').href = `{{ url_for('google_sheet.detail') }}?task_id=${currentTaskId}`;
-                            
-                            // 添加完成信息
-                            const completionInfo = document.createElement('div');
-                            completionInfo.className = task.status === 'completed' ? 'text-success' : 'text-danger';
-                            completionInfo.textContent = `任务${task.status === 'completed' ? '完成' : '失败'}`;
-                            statusMessage.appendChild(completionInfo);
-                        }
-                    }
-                });
-            }
-        }, 2000);
-    }
-
-    // 页面卸载时清理资源
-    window.addEventListener('beforeunload', function() {
-        console.log('页面即将卸载，清理SSE连接');
-        if (eventSource) {
-            eventSource.close();
-            eventSource = null;
-        }
-    });
-    
-    // 页面隐藏时也清理连接
-    document.addEventListener('visibilitychange', function() {
-        if (document.hidden) {
-            console.log('页面隐藏，暂停SSE连接');
-            if (eventSource) {
-                eventSource.close();
-                eventSource = null;
-            }
-        } else {
-            console.log('页面显示，恢复SSE连接');
-            if (currentTaskId && !eventSource) {
-                startEventListening(currentTaskId);
-            }
-        }
-    });
+    // 页面卸载时清理资源（SSE功能已移除）
 
     // 保存表单数据到localStorage
     function saveFormData() {

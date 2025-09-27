@@ -20,7 +20,14 @@ class ConfigManager:
             with current_app.app_context():
                 configs = SystemConfig.query.all()
                 for config in configs:
-                    self._cache[config.key] = config.value
+                    # 尝试反序列化JSON字符串
+                    value = config.value
+                    if isinstance(value, str) and value.startswith(('{', '[')):
+                        try:
+                            value = json.loads(value)
+                        except (json.JSONDecodeError, TypeError):
+                            pass  # 保持原始字符串
+                    self._cache[config.key] = value
                 logger.info(f"加载了 {len(configs)} 个配置项")
         except Exception as e:
             logger.error(f"加载配置失败: {str(e)}")
@@ -111,14 +118,28 @@ class ConfigManager:
     
     def get_google_sheet_config(self) -> Dict[str, Any]:
         """获取Google Sheet相关配置"""
+        param_positions = self.get_config('parameter_positions', [])
+        check_positions = self.get_config('check_positions', [])
+        result_positions = self.get_config('result_positions', [])
+                # 兼容性处理：如果是字典格式，转换为数组格式
+        if isinstance(param_positions, dict):
+            param_positions = list(param_positions.values())
+                
+        # 兼容性处理：如果是字典格式，转换为数组格式
+        if isinstance(check_positions, dict):
+            check_positions = list(check_positions.values())
+        
+        if isinstance(result_positions, dict):
+            result_positions = list(result_positions.values())
+            
         return {
             'spreadsheet_id': self.get_config('spreadsheet_id', ''),
             'sheet_name': self.get_config('sheet_name', 'data'),
             'token_file': self.get_config('token_file', 'data/token.json'),
             'proxy_url': self.get_config('proxy_url'),
-            'parameter_positions': self.get_config('parameter_positions', {}),
-            'check_positions': self.get_config('check_positions', {}),
-            'result_positions': self.get_config('result_positions', {})
+            'parameter_positions': param_positions,
+            'check_positions': check_positions,
+            'result_positions': result_positions
         }
     
     def set_google_sheet_config(self, config: Dict[str, Any]) -> bool:
