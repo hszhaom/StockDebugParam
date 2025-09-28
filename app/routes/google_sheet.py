@@ -21,3 +21,17 @@ def create():
 def detail():
     """任务详情页面"""
     return render_template('google_sheet/detail.html')
+
+@google_sheet_bp.route('/create-restart/<task_id>')
+def create_restart(task_id):
+    """重启任务页面，预填充原任务的配置"""
+    from app.services.task_manager import task_manager
+    
+    # 获取原任务
+    task = task_manager.get_task_status(task_id)
+    if not task:
+        logger.error(f"原任务不存在: {task_id}")
+        return render_template('google_sheet/create.html')
+    
+    # 将原任务配置传递给模板
+    return render_template('google_sheet/create.html', restart_config=task['config'], original_task_id=task_id)

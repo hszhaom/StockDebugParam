@@ -341,7 +341,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
-                <a href="{{ url_for('google_sheet.detail') }}" class="btn btn-primary" id="view-task-btn" style="display: none;">查看任务详情</a>
+                <a href="/google-sheet/detail" class="btn btn-primary" id="view-task-btn" style="display: none;">查看任务详情</a>
             </div>
         </div>
     </div>
@@ -356,7 +356,8 @@
     // 页面加载完成后绑定事件
     document.addEventListener('DOMContentLoaded', function() {
         bindEvents();
-        loadSavedFormData();
+        loadRestartConfig(); // 先加载重启配置
+        loadSavedFormData(); // 然后加载保存的表单数据
         calculateCombinations();
     });
 
@@ -674,7 +675,7 @@
                 
                 // 延迟1秒后跳转到详情页面
                 setTimeout(function() {
-                    window.location.href = `{{ url_for('google_sheet.detail') }}?task_id=${currentTaskId}`;
+                    window.location.href = `/google-sheet/detail?task_id=${currentTaskId}`;
                 }, 1000);
             } else {
                 showNotification('创建任务失败: ' + (data ? data.message : '未知错误'), 'error');
@@ -784,6 +785,80 @@
             showNotification('已清除保存的表单数据', 'success');
         } catch (e) {
             console.warn('无法清除localStorage数据:', e);
+        }
+    }
+
+    // 加载重启配置
+    function loadRestartConfig() {
+        try {
+            {% if restart_config %}
+            const restartConfig = {{ restart_config | tojson }};
+            const originalTaskId = '{{ original_task_id }}';
+            
+            console.log('加载重启配置:', restartConfig);
+            
+            // 填充基本信息（添加重启标识）
+            if (restartConfig.name) {
+                document.getElementById('task_name').value = restartConfig.name + ' (重启)';
+            }
+            
+            // 填充Google Sheet配置
+            if (restartConfig.spreadsheet_id) {
+                document.getElementById('spreadsheet').value = restartConfig.spreadsheet_id;
+            }
+            if (restartConfig.sheet_name) {
+                const sheetSelect = document.getElementById('sheet_name');
+                const options = Array.from(sheetSelect.options).map(opt => opt.value);
+                if (options.includes(restartConfig.sheet_name)) {
+                    sheetSelect.value = restartConfig.sheet_name;
+                } else {
+                    sheetSelect.value = '自定义';
+                    document.getElementById('custom_sheet_name').value = restartConfig.sheet_name;
+                    document.getElementById('custom-sheet-container').style.display = 'block';
+                }
+            }
+            if (restartConfig.token_type) {
+                document.getElementById('token_type').value = restartConfig.token_type;
+                // 触发change事件来显示对应的输入框
+                document.getElementById('token_type').dispatchEvent(new Event('change'));
+            }
+            if (restartConfig.token_file) {
+                document.getElementById('token_file').value = restartConfig.token_file;
+            }
+            if (restartConfig.token_json) {
+                document.getElementById('token_json').value = restartConfig.token_json;
+            }
+            if (restartConfig.proxy_url) {
+                document.getElementById('proxy_url').value = restartConfig.proxy_url;
+            }
+            
+            // 填充参数配置
+            if (restartConfig.parameters && Array.isArray(restartConfig.parameters)) {
+                restartConfig.parameters.forEach((param, index) => {
+                    const paramId = `param${index + 1}`;
+                    const paramElement = document.getElementById(paramId);
+                    if (paramElement && Array.isArray(param)) {
+                        paramElement.value = JSON.stringify(param);
+                    }
+                });
+            }
+            
+            // 更新页面标题
+            document.title = '重启任务 - Google Sheet 参数批量校验';
+            
+            // 在页面顶部添加提示
+            const cardHeader = document.querySelector('.card-header h4');
+            if (cardHeader) {
+                cardHeader.innerHTML = '<i class="bi bi-arrow-clockwise"></i> 重启任务 (基于原任务: ' + originalTaskId + ')';
+            }
+            
+            // 计算参数组合
+            calculateCombinations();
+            
+            showNotification('已加载原任务配置', 'info');
+            {% endif %}
+        } catch (e) {
+            console.warn('加载重启配置失败:', e);
         }
     }
 </script>

@@ -86,15 +86,17 @@
             xhr.setRequestHeader('Content-Type', 'application/json');
             xhr.onreadystatechange = function() {
                 if (xhr.readyState === 4) {
-                    if (xhr.status === 200) {
-                        try {
-                            const response = JSON.parse(xhr.responseText);
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        if (xhr.status === 200) {
                             callback(null, response);
-                        } catch (e) {
-                            callback(e, null);
+                        } else {
+                            // 非200状态码，但有JSON响应，传递响应数据
+                            callback(new Error(`HTTP ${xhr.status}`), response);
                         }
-                    } else {
-                        callback(new Error('Request failed'), null);
+                    } catch (e) {
+                        // JSON解析失败
+                        callback(new Error(`Request failed: ${xhr.status} ${xhr.statusText}`), null);
                     }
                 }
             };

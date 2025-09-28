@@ -119,6 +119,34 @@ python run.py
 
 ## 配置说明
 
+### 安全配置 (重要!)
+
+在生产环境中，请务必设置以下环境变量：
+
+```bash
+# 生成安全的密钥 (至少32字符)
+export SECRET_KEY="your_secure_random_key_here"
+
+# 设置数据库URL
+export DATABASE_URL="sqlite:///production.db"
+
+# 其他配置
+export MAX_CONCURRENT_TASKS=5
+export LOG_LEVEL=INFO
+```
+
+复制 `env.example` 为 `.env` 并修改配置：
+```bash
+cp env.example .env
+# 编辑 .env 文件设置实际的配置值
+```
+
+⚠️ **安全提醒**: 
+- 永远不要在代码中硬编码密钥
+- 将敏感文件添加到 `.gitignore`
+- 定期轮换API密钥
+- 使用HTTPS传输敏感数据
+
 ### Google Sheet 配置
 ```json
 {

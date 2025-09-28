@@ -115,14 +115,21 @@ dmypy.json
 ehthumbs.db
 Thumbs.db
 
-# Project specific
-data/token.json
+# Project specific - Sensitive files
+data/token*.json
 data/temp_token_*.json
 data/tasks.json
 logs/*.log
 *.db
 *.sqlite
 *.sqlite3
+
+# API keys and secrets
+**/credentials.json
+**/client_secret*.json
+**/*_secret*
+**/*_key*
+**/config_secret*
 
 # Config files with sensitive data
 config/config.json

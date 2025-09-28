@@ -173,7 +173,43 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
-                <button type="button" class="btn btn-warning" id="cancel-task-btn" onclick="cancelTask()" style="display: none;">取消任务</button>
+                
+                <!-- 任务操作按钮组 -->
+                <div class="btn-group" role="group" id="task-actions">
+                    <!-- 查看详情按钮 -->
+                    <button type="button" class="btn btn-primary" id="view-detail-btn" onclick="viewTaskDetail()" style="display: none;">
+                        <i class="bi bi-eye"></i> 查看详情
+                    </button>
+                    
+                    <!-- 取消任务按钮 -->
+                    <button type="button" class="btn btn-warning" id="cancel-task-btn" onclick="cancelTask()" style="display: none;">
+                        <i class="bi bi-stop-circle"></i> 取消任务
+                    </button>
+                    
+                    <!-- 重启任务下拉菜单 -->
+                    <div class="btn-group" role="group" id="restart-task-group" style="display: none;">
+                        <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown">
+                            <i class="bi bi-arrow-clockwise"></i> 重启任务
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="restartTask(currentTaskId, true)">
+                                <i class="bi bi-play-circle"></i> 从断点重启
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="restartTask(currentTaskId, false)">
+                                <i class="bi bi-arrow-repeat"></i> 从头重启
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" onclick="createRestartTask()">
+                                <i class="bi bi-plus-circle"></i> 创建新重启任务
+                            </a></li>
+                        </ul>
+                    </div>
+                    
+                    <!-- 删除任务按钮 -->
+                    <button type="button" class="btn btn-danger" id="delete-task-btn" onclick="deleteTask()">
+                        <i class="bi bi-trash"></i> 删除任务
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -259,14 +295,41 @@
                 <td>${formatTime(task.start_time)}</td>
                 <td>${formatTime(task.end_time)}</td>
                 <td>
-                    <button class="btn btn-sm btn-outline-primary" onclick="showTaskDetail('${task.id}')">
-                        <i class="bi bi-eye"></i>
-                    </button>
-                    ${task.status === 'running' ? `
-                        <button class="btn btn-sm btn-outline-warning" onclick="cancelTask('${task.id}')">
-                            <i class="bi bi-stop-circle"></i>
+                    <div class="btn-group" role="group">
+                        <a href="/google-sheet/detail?task_id=${task.id}" class="btn btn-sm btn-outline-primary" title="查看详情">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <button class="btn btn-sm btn-outline-info" onclick="showTaskDetail('${task.id}')" title="快速查看">
+                            <i class="bi bi-info-circle"></i>
                         </button>
-                    ` : ''}
+                        ${task.status === 'running' ? `
+                            <button class="btn btn-sm btn-outline-warning" onclick="cancelTask('${task.id}')" title="取消任务">
+                                <i class="bi bi-stop-circle"></i>
+                            </button>
+                        ` : ''}
+                        ${task.status === 'pending' || task.status === 'completed' || task.status === 'error' || task.status === 'cancelled' ? `
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-sm btn-outline-success dropdown-toggle" data-bs-toggle="dropdown" title="重启任务">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="#" onclick="restartTask('${task.id}', true)">
+                                        <i class="bi bi-play-circle"></i> 从断点重启
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="restartTask('${task.id}', false)">
+                                        <i class="bi bi-arrow-repeat"></i> 从头重启
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="/google-sheet/create-restart/${task.id}">
+                                        <i class="bi bi-plus-circle"></i> 创建新重启任务
+                                    </a></li>
+                                </ul>
+                            </div>
+                        ` : ''}
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteTask('${task.id}')" title="删除任务">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
                 </td>
             `;
             tbody.appendChild(row);
@@ -370,13 +433,8 @@
                 document.getElementById('detail-task-ended').textContent = formatTime(task.end_time);
                 document.getElementById('detail-task-config').textContent = JSON.stringify(task.config, null, 2);
                 
-                // 显示/隐藏取消按钮
-                const cancelBtn = document.getElementById('cancel-task-btn');
-                if (task.status === 'running') {
-                    cancelBtn.style.display = 'inline-block';
-                } else {
-                    cancelBtn.style.display = 'none';
-                }
+                // 控制按钮显示
+                updateTaskActionButtons(task.status);
                 
                 // 加载任务日志
                 loadTaskLogs(taskId);
@@ -394,10 +452,18 @@
         ajaxRequest(`/api/tasks/${taskId}/logs`, 'GET', null, function(err, data) {
             if (!err && data && data.logs) {
                 const logContainer = document.getElementById('detail-task-logs');
+                
+                // 保存当前滚动位置
+                const wasAtBottom = logContainer.scrollTop + logContainer.clientHeight >= logContainer.scrollHeight - 5;
+                
                 logContainer.innerHTML = data.logs.map(log => 
                     `[${formatTime(log.timestamp)}] ${log.message}`
                 ).join('<br>');
-                logContainer.scrollTop = logContainer.scrollHeight;
+                
+                // 如果之前在底部，保持滚动到底部
+                if (wasAtBottom) {
+                    logContainer.scrollTop = logContainer.scrollHeight;
+                }
             }
         });
     }
@@ -421,9 +487,94 @@
         }
     }
 
+    // 删除任务
+    function deleteTask(taskId) {
+        if (!taskId) taskId = currentTaskId;
+        
+        if (confirm('确定要删除这个任务吗？删除后无法恢复！')) {
+            ajaxRequest(`/api/tasks/${taskId}`, 'DELETE', null, function(err, data) {
+                if (!err && data && data.status === 'success') {
+                    showNotification('任务已删除', 'success');
+                    loadTasks();
+                    if (currentTaskId === taskId) {
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('taskDetailModal'));
+                        if (modal) modal.hide();
+                    }
+                } else {
+                    showNotification('删除任务失败: ' + (data ? data.message : '未知错误'), 'error');
+                }
+            });
+        }
+    }
+
+    // 重启任务
+    function restartTask(taskId, resumeFromCheckpoint) {
+        if (!taskId) taskId = currentTaskId;
+        
+        const action = resumeFromCheckpoint ? '从断点重启' : '从头重启';
+        
+        if (confirm(`确定要${action}任务吗？`)) {
+            const requestData = {
+                resume_from_checkpoint: resumeFromCheckpoint
+            };
+            
+            ajaxRequest(`/api/tasks/${taskId}/restart`, 'POST', requestData, function(err, data) {
+                if (data && data.status === 'success') {
+                    showNotification(`任务${action}成功`, 'success');
+                    loadTasks();
+                    if (currentTaskId === taskId) {
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('taskDetailModal'));
+                        if (modal) modal.hide();
+                    }
+                } else {
+                    // 处理错误情况 - data可能包含错误信息，即使err存在
+                    const errorMessage = (data && data.message) ? data.message : (err ? err.message : '未知错误');
+                    showNotification(`${action}失败: ${errorMessage}`, 'error');
+                }
+            });
+        }
+    }
+
     function refreshTasks() {
         loadTasks();
         showNotification('任务列表已刷新', 'success');
+    }
+
+    // 更新任务操作按钮的显示状态
+    function updateTaskActionButtons(status) {
+        const viewDetailBtn = document.getElementById('view-detail-btn');
+        const cancelBtn = document.getElementById('cancel-task-btn');
+        const restartGroup = document.getElementById('restart-task-group');
+        const deleteBtn = document.getElementById('delete-task-btn');
+        
+        // 显示查看详情按钮
+        viewDetailBtn.style.display = 'inline-block';
+        
+        // 根据状态控制按钮显示
+        if (status === 'running') {
+            cancelBtn.style.display = 'inline-block';
+            restartGroup.style.display = 'none';
+        } else {
+            cancelBtn.style.display = 'none';
+            restartGroup.style.display = 'inline-block';
+        }
+        
+        // 删除按钮始终显示
+        deleteBtn.style.display = 'inline-block';
+    }
+
+    // 跳转到任务详情页面
+    function viewTaskDetail() {
+        if (currentTaskId) {
+            window.location.href = `/google-sheet/detail?task_id=${currentTaskId}`;
+        }
+    }
+
+    // 创建重启任务
+    function createRestartTask() {
+        if (currentTaskId) {
+            window.location.href = `/google-sheet/create-restart/${currentTaskId}`;
+        }
     }
 </script>
 {% endblock %}
