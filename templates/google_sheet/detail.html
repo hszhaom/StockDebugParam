@@ -15,6 +15,26 @@
                     <button class="btn btn-warning btn-sm" id="cancel-task-btn" style="display:none;">
                         <i class="bi bi-stop-circle"></i> 停止任务
                     </button>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-info btn-sm dropdown-toggle" data-bs-toggle="dropdown" id="restart-dropdown-btn" style="display:none;">
+                            <i class="bi bi-arrow-clockwise"></i> 重启任务
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="restartTask(true)">
+                                <i class="bi bi-play-circle"></i> 从断点重启
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="restartTask(false)">
+                                <i class="bi bi-arrow-repeat"></i> 从头重启
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" onclick="goToCreateRestartTask()">
+                                <i class="bi bi-plus-circle"></i> 跳转到创建重启任务
+                            </a></li>
+                        </ul>
+                    </div>
+                    <button class="btn btn-outline-info btn-sm" id="check-status-btn" onclick="checkTaskStatus()">
+                        <i class="bi bi-search"></i> 检查状态
+                    </button>
                     <a href="{{ url_for('google_sheet.index') }}" class="btn btn-secondary btn-sm">
                         <i class="bi bi-arrow-left"></i> 返回首页
                     </a>
@@ -450,6 +470,14 @@
                     cancelBtn.style.display = 'none';
                 }
                 
+                // 显示/隐藏重启按钮（包括pending状态）
+                const restartBtn = document.getElementById('restart-dropdown-btn');
+                if (task.status === 'pending' || task.status === 'completed' || task.status === 'error' || task.status === 'cancelled') {
+                    restartBtn.style.display = 'inline-block';
+                } else {
+                    restartBtn.style.display = 'none';
+                }
+                
                 // 填充配置信息
                 loadTaskConfig(task.config);
                 loadTaskParameters(task.config);
@@ -787,6 +815,99 @@
             case 'running': return 'bg-primary';
             default: return 'bg-secondary';
         }
+    }
+
+    // 检查任务状态
+    function checkTaskStatus() {
+        const btn = document.getElementById('check-status-btn');
+        const icon = btn.querySelector('i');
+        
+        // 添加旋转动画
+        icon.style.animation = 'spin 1s linear infinite';
+        btn.disabled = true;
+        
+        ajaxRequest(`/api/tasks/${currentTaskId}/status-check`, 'GET', null, function(err, data) {
+            icon.style.animation = '';
+            btn.disabled = false;
+            
+            if (!err && data && data.status === 'success') {
+                const statusCheck = data.status_check;
+                let message = `状态检查结果:\n`;
+                message += `数据库状态: ${statusCheck.db_status}\n`;
+                message += `内存运行状态: ${statusCheck.memory_running ? '运行中' : '未运行'}\n`;
+                message += `当前步骤: ${statusCheck.current_step}/${statusCheck.total_steps}\n`;
+                
+                if (statusCheck.latest_log_time) {
+                    message += `最新日志时间: ${formatTime(statusCheck.latest_log_time)}\n`;
+                }
+                
+                if (statusCheck.can_restart) {
+                    message += `\n⚠️ 检测到问题: ${statusCheck.restart_reason}\n`;
+                    message += `建议重启任务`;
+                    
+                    if (confirm(message + '\n\n是否立即重启任务？')) {
+                        restartTask(true);
+                    }
+                } else {
+                    message += `\n✅ 任务状态正常`;
+                    showNotification(message, 'info');
+                }
+            } else {
+                showNotification('检查任务状态失败: ' + (data ? data.message : '未知错误'), 'error');
+            }
+        });
+    }
+
+    // 重启任务
+    function restartTask(resumeFromCheckpoint) {
+        const action = resumeFromCheckpoint ? '从断点重启' : '从头重启';
+        
+        if (!confirm(`确定要${action}任务吗？`)) {
+            return;
+        }
+        
+        const requestData = {
+            resume_from_checkpoint: resumeFromCheckpoint
+        };
+        
+        ajaxRequest(`/api/tasks/${currentTaskId}/restart`, 'POST', requestData, function(err, data) {
+            if (data && data.status === 'success') {
+                showNotification(`任务${action}成功`, 'success');
+                // 刷新任务详情
+                loadTaskDetail();
+            } else {
+                // 处理错误情况 - data可能包含错误信息，即使err存在
+                const errorMessage = (data && data.message) ? data.message : (err ? err.message : '未知错误');
+                showNotification(`${action}失败: ${errorMessage}`, 'error');
+            }
+        });
+    }
+
+    // 跳转到创建重启任务页面
+    function goToCreateRestartTask() {
+        window.location.href = `/google-sheet/create-restart/${currentTaskId}`;
+    }
+
+    // 创建新的重启任务
+    function createRestartTask() {
+        if (!confirm('确定要创建新的重启任务吗？这将基于当前任务的配置创建一个新任务。')) {
+            return;
+        }
+        
+        ajaxRequest(`/api/tasks/${currentTaskId}/create-restart`, 'POST', {}, function(err, data) {
+            if (data && data.status === 'success') {
+                showNotification(`新重启任务创建成功`, 'success');
+                
+                // 询问是否跳转到新任务
+                if (confirm('是否跳转到新任务的详情页面？')) {
+                    window.location.href = `/google-sheet/detail?task_id=${data.new_task_id}`;
+                }
+            } else {
+                // 处理错误情况 - data可能包含错误信息，即使err存在
+                const errorMessage = (data && data.message) ? data.message : (err ? err.message : '未知错误');
+                showNotification(`创建重启任务失败: ${errorMessage}`, 'error');
+            }
+        });
     }
 </script>
 {% endblock %}

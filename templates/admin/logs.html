@@ -65,43 +65,23 @@
             <span class="badge bg-secondary ms-2" id="log-count">0</span>
         </h5>
     </div>
-    <div class="card-body">
-        <div class="log-container" id="log-container">
+    <div class="card-body p-0">
+        <div class="log-container" id="log-container" style="
+            background: #1e1e1e; 
+            color: #d4d4d4; 
+            height: 600px; 
+            overflow-y: auto; 
+            padding: 10px; 
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.4;
+        ">
             <!-- 日志内容将通过JavaScript动态填充 -->
         </div>
     </div>
 </div>
 
-<!-- 日志详情模态框 -->
-<div class="modal fade" id="logDetailModal" tabindex="-1" aria-labelledby="logDetailModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="logDetailModalLabel">日志详情</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6>基本信息</h6>
-                        <table class="table table-sm">
-                            <tr><th>时间:</th><td id="detail-log-time"></td></tr>
-                            <tr><th>级别:</th><td id="detail-log-level"></td></tr>
-                            <tr><th>来源:</th><td id="detail-log-source"></td></tr>
-                        </table>
-                    </div>
-                    <div class="col-md-6">
-                        <h6>日志内容</h6>
-                        <pre id="detail-log-message" class="bg-light p-3" style="max-height: 300px; overflow-y: auto;"></pre>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- 简化的日志显示，不需要模态框 -->
 {% endblock %}
 
 {% block scripts %}
@@ -113,7 +93,11 @@
 
     // 页面加载完成后获取日志
     document.addEventListener('DOMContentLoaded', function() {
-        loadLogs();
+        // 延迟加载，确保DOM完全准备好
+        setTimeout(function() {
+            loadLogs();
+        }, 100);
+        
         // 每5秒自动刷新一次
         refreshInterval = setInterval(function() {
             if (autoRefresh) {
@@ -127,56 +111,62 @@
         if (refreshInterval) {
             clearInterval(refreshInterval);
         }
+        stopRealtimeUpdate();
     });
 
     function loadLogs() {
-        // 这里应该调用实际的日志API
-        // 由于原项目没有日志API，我们模拟一些日志数据
-        const mockLogs = [
-            {
-                timestamp: new Date().toISOString(),
-                level: 'info',
-                message: '系统启动成功',
-                source: 'system'
-            },
-            {
-                timestamp: new Date(Date.now() - 60000).toISOString(),
-                level: 'info',
-                message: '任务管理器初始化完成',
-                source: 'task_manager'
-            },
-            {
-                timestamp: new Date(Date.now() - 120000).toISOString(),
-                level: 'warning',
-                message: '检测到长时间运行的任务',
-                source: 'task_monitor'
-            },
-            {
-                timestamp: new Date(Date.now() - 180000).toISOString(),
-                level: 'error',
-                message: 'Google Sheet连接失败',
-                source: 'google_sheet_service'
-            }
-        ];
+        // 显示加载状态
+        showLoadingState();
         
-        allLogs = mockLogs;
-        filterLogs();
+        // 构建查询参数
+        const params = new URLSearchParams();
+        const levelFilterEl = document.getElementById('level-filter');
+        const searchInputEl = document.getElementById('search-input');
+        const dateFilterEl = document.getElementById('date-filter');
+        
+        const levelFilter = levelFilterEl ? levelFilterEl.value : '';
+        const searchInput = searchInputEl ? searchInputEl.value : '';
+        const dateFilter = dateFilterEl ? dateFilterEl.value : '';
+        
+        if (levelFilter) params.append('level', levelFilter);
+        if (searchInput) params.append('search', searchInput);
+        if (dateFilter) params.append('date', dateFilter);
+        params.append('limit', '200'); // 获取更多日志
+        
+        // 调用真实的日志API
+        console.log('开始加载日志，API URL:', `/api/logs?${params.toString()}`);
+        
+        ajaxRequest(`/api/logs?${params.toString()}`, 'GET', null, function(err, data) {
+            hideLoadingState();
+            
+            console.log('日志API响应:', err, data);
+            
+            if (!err && data && data.status === 'success') {
+                allLogs = data.logs || [];
+                filteredLogs = allLogs; // 服务端已经过滤，直接使用
+                console.log('加载到的日志数量:', allLogs.length);
+                renderLogs();
+                
+                // 更新最后更新时间
+                const lastUpdateEl = document.getElementById('last-update');
+                if (lastUpdateEl) {
+                    lastUpdateEl.textContent = formatTime(new Date().toISOString());
+                }
+            } else {
+                console.error('日志加载失败:', err, data);
+                showNotification('加载日志失败: ' + (data ? data.message : '未知错误'), 'error');
+                
+                // 如果API失败，显示空状态
+                allLogs = [];
+                filteredLogs = [];
+                renderLogs();
+            }
+        });
     }
 
     function filterLogs() {
-        const levelFilter = document.getElementById('level-filter').value;
-        const searchInput = document.getElementById('search-input').value.toLowerCase();
-        const dateFilter = document.getElementById('date-filter').value;
-
-        filteredLogs = allLogs.filter(log => {
-            const levelMatch = !levelFilter || log.level === levelFilter;
-            const searchMatch = !searchInput || log.message.toLowerCase().includes(searchInput);
-            const dateMatch = !dateFilter || log.timestamp.startsWith(dateFilter);
-            
-            return levelMatch && searchMatch && dateMatch;
-        });
-
-        renderLogs();
+        // 重新加载数据，服务端处理过滤
+        loadLogs();
     }
 
     function clearFilters() {
@@ -190,7 +180,14 @@
         const container = document.getElementById('log-container');
         const countBadge = document.getElementById('log-count');
         
-        countBadge.textContent = filteredLogs.length;
+        if (!container) {
+            console.error('日志容器未找到');
+            return;
+        }
+        
+        if (countBadge) {
+            countBadge.textContent = filteredLogs.length;
+        }
         
         if (filteredLogs.length === 0) {
             container.innerHTML = '<div class="text-center text-muted">暂无日志</div>';
@@ -198,59 +195,37 @@
         }
 
         const logHtml = filteredLogs.map(log => {
-            const levelClass = getLevelClass(log.level);
-            const levelText = getLevelText(log.level);
             const time = formatTime(log.timestamp);
+            const levelColor = getLevelColor(log.level);
             
             return `
-                <div class="log-entry mb-2 p-2 border-bottom" onclick="showLogDetail('${log.timestamp}')" style="cursor: pointer;">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div class="flex-grow-1">
-                            <span class="badge ${levelClass} me-2">${levelText}</span>
-                            <span class="text-muted small">${time}</span>
-                            <span class="text-muted small ms-2">[${log.source}]</span>
-                        </div>
-                    </div>
-                    <div class="mt-1">${log.message}</div>
+                <div class="log-line" style="margin-bottom: 2px;">
+                    <span style="color: #7c7c7c;">${time}</span> 
+                    <span style="color: ${levelColor}; font-weight: bold;">[${log.level.toUpperCase()}]</span> 
+                    <span style="color: #8c8c8c;">[${log.source}]</span> 
+                    <span style="color: #d4d4d4;">${log.message}</span>
                 </div>
             `;
         }).join('');
 
+        // 保存当前滚动位置
+        const wasAtBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 5;
+        
         container.innerHTML = logHtml;
         
-        // 滚动到底部
-        container.scrollTop = container.scrollHeight;
-    }
-
-    function getLevelClass(level) {
-        switch (level) {
-            case 'info': return 'bg-info';
-            case 'warning': return 'bg-warning';
-            case 'error': return 'bg-danger';
-            default: return 'bg-secondary';
+        // 如果之前在底部，保持滚动到底部
+        if (wasAtBottom) {
+            container.scrollTop = container.scrollHeight;
         }
     }
 
-    function getLevelText(level) {
+    function getLevelColor(level) {
         switch (level) {
-            case 'info': return '信息';
-            case 'warning': return '警告';
-            case 'error': return '错误';
-            default: return level;
+            case 'info': return '#0d6efd';     // 蓝色
+            case 'warning': return '#fd7e14';  // 橙色
+            case 'error': return '#dc3545';    // 红色
+            default: return '#6c757d';         // 灰色
         }
-    }
-
-    function showLogDetail(timestamp) {
-        const log = allLogs.find(l => l.timestamp === timestamp);
-        if (!log) return;
-
-        document.getElementById('detail-log-time').textContent = formatTime(log.timestamp);
-        document.getElementById('detail-log-level').innerHTML = `<span class="badge ${getLevelClass(log.level)}">${getLevelText(log.level)}</span>`;
-        document.getElementById('detail-log-source').textContent = log.source;
-        document.getElementById('detail-log-message').textContent = log.message;
-
-        const modal = new bootstrap.Modal(document.getElementById('logDetailModal'));
-        modal.show();
     }
 
     function refreshLogs() {
@@ -260,10 +235,9 @@
 
     function clearLogs() {
         if (confirm('确定要清空所有日志吗？此操作不可恢复。')) {
-            // 这里应该调用清空日志的API
-            allLogs = [];
-            filterLogs();
-            showNotification('日志已清空', 'success');
+            showNotification('清空日志功能暂未实现', 'warning');
+            // TODO: 实现清空日志的API调用
+            // 目前只是展示功能，不实际清空文件日志
         }
     }
 
@@ -297,9 +271,116 @@
         if (autoRefresh) {
             btn.innerHTML = '<i class="bi bi-pause-circle"></i> 暂停自动刷新';
             btn.className = 'btn btn-sm btn-outline-warning';
+            startRealtimeUpdate();
         } else {
             btn.innerHTML = '<i class="bi bi-play-circle"></i> 开始自动刷新';
             btn.className = 'btn btn-sm btn-outline-success';
+            stopRealtimeUpdate();
+        }
+    }
+
+    // 实时更新相关变量
+    let realtimeInterval = null;
+    let lastLogTimestamp = null;
+
+    // 开始实时更新
+    function startRealtimeUpdate() {
+        if (realtimeInterval) {
+            clearInterval(realtimeInterval);
+        }
+        
+        // 记录当前最新日志的时间戳
+        if (filteredLogs.length > 0) {
+            lastLogTimestamp = filteredLogs[0].timestamp;
+        }
+        
+        realtimeInterval = setInterval(function() {
+            fetchLatestLogs();
+        }, 3000); // 每3秒检查一次新日志
+    }
+
+    // 停止实时更新
+    function stopRealtimeUpdate() {
+        if (realtimeInterval) {
+            clearInterval(realtimeInterval);
+            realtimeInterval = null;
+        }
+    }
+
+    // 获取最新日志
+    function fetchLatestLogs() {
+        const params = new URLSearchParams();
+        if (lastLogTimestamp) {
+            params.append('since', lastLogTimestamp);
+        }
+        params.append('limit', '20');
+        
+        ajaxRequest(`/api/logs/latest?${params.toString()}`, 'GET', null, function(err, data) {
+            if (!err && data && data.status === 'success' && data.logs.length > 0) {
+                // 添加新日志到现有列表的顶部
+                const newLogs = data.logs;
+                
+                // 更新最新时间戳
+                if (newLogs.length > 0) {
+                    lastLogTimestamp = newLogs[newLogs.length - 1].timestamp;
+                }
+                
+                // 将新日志添加到列表开头（因为我们是倒序显示）
+                filteredLogs = newLogs.reverse().concat(filteredLogs);
+                
+                // 限制总数以避免内存占用过多
+                if (filteredLogs.length > 500) {
+                    filteredLogs = filteredLogs.slice(0, 500);
+                }
+                
+                // 重新渲染
+                renderLogs();
+                
+                // 显示新日志通知
+                if (newLogs.length > 0) {
+                    showNotification(`收到 ${newLogs.length} 条新日志`, 'info');
+                }
+            }
+        });
+    }
+
+    // 显示加载状态
+    function showLoadingState() {
+        const container = document.getElementById('log-container');
+        if (container) {
+            container.innerHTML = `
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">加载中...</span>
+                    </div>
+                    <div class="mt-2 text-muted">正在加载日志...</div>
+                </div>
+            `;
+        } else {
+            console.error('日志容器未找到: log-container');
+        }
+    }
+
+    // 隐藏加载状态
+    function hideLoadingState() {
+        // 加载状态会被renderLogs覆盖，这里不需要特殊处理
+    }
+
+    // 格式化时间
+    function formatTime(dateString) {
+        if (!dateString) return '-';
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        } catch (e) {
+            return dateString;
         }
     }
 </script>

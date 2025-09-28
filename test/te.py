@@ -1,5 +1,14 @@
 from binance.client import Client
-client = Client(api_key='yo3hNmQZQGmsX8RvhMmjMG76j7vXUleB73ww7UkF6kBMU7goabKsmKsdRP7Vlnva', api_secret='lMBNnjiXlF8eA1US6llLQNX93oWpOmAEKkExFaSeaRAR1NgiQq2kVevsKLx8nOdQ',testnet=False)
+import os
+
+# 从环境变量获取API密钥
+api_key = os.environ.get('BINANCE_API_KEY')
+api_secret = os.environ.get('BINANCE_API_SECRET')
+
+if not api_key or not api_secret:
+    raise ValueError("请设置 BINANCE_API_KEY 和 BINANCE_API_SECRET 环境变量")
+
+client = Client(api_key=api_key, api_secret=api_secret, testnet=False)
 
 
 

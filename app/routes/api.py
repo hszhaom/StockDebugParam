@@ -109,6 +109,55 @@ def get_task_results(task_id):
         logger.error(f"获取任务结果失败: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@api_bp.route('/tasks/<task_id>/status-check', methods=['GET'])
+def check_task_status(task_id):
+    """检查任务本地状态"""
+    try:
+        status_check = task_manager.check_local_task_status(task_id)
+        return jsonify({"status": "success", "status_check": status_check})
+    except Exception as e:
+        logger.error(f"检查任务状态失败: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@api_bp.route('/tasks/<task_id>/restart', methods=['POST'])
+def restart_task(task_id):
+    """重启任务"""
+    try:
+        data = request.get_json() or {}
+        resume_from_checkpoint = data.get('resume_from_checkpoint', True)
+        
+        result = task_manager.restart_task(task_id, resume_from_checkpoint)
+        if result["status"] == "success":
+            return jsonify(result)
+        else:
+            return jsonify(result), 400
+    except Exception as e:
+        logger.error(f"重启任务失败: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@api_bp.route('/tasks/<task_id>/create-restart', methods=['POST'])
+def create_restart_task_api(task_id):
+    """基于原任务创建新的重启任务"""
+    try:
+        new_task_id = task_manager.create_restart_task(task_id)
+        
+        # 自动启动新任务
+        if task_manager.start_task(new_task_id):
+            return jsonify({
+                "status": "success", 
+                "new_task_id": new_task_id,
+                "message": "重启任务创建并启动成功"
+            })
+        else:
+            return jsonify({
+                "status": "success", 
+                "new_task_id": new_task_id,
+                "message": "重启任务创建成功，但启动失败"
+            })
+    except Exception as e:
+        logger.error(f"创建重启任务失败: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 @api_bp.route('/tasks/<task_id>/events')
 def task_events_stream(task_id):
     """SSE事件流，用于任务状态更新和确认请求"""
@@ -225,19 +274,141 @@ def get_logs():
     """获取系统日志"""
     try:
         import os
+        import re
         from app.config import Config
         
+        # 获取查询参数
+        limit = request.args.get('limit', 100, type=int)
+        level_filter = request.args.get('level', '')
+        search = request.args.get('search', '')
+        date_filter = request.args.get('date', '')
+        
         log_file = Config.LOG_FILE
-        logs = []
+        parsed_logs = []
         
         if os.path.exists(log_file):
             with open(log_file, 'r', encoding='utf-8') as f:
-                # 读取最后100行日志
                 lines = f.readlines()
-                logs = lines[-100:] if len(lines) > 100 else lines
-                logs = [line.strip() for line in logs if line.strip()]
+                # 读取最后的日志行
+                recent_lines = lines[-limit*3:] if len(lines) > limit*3 else lines
+                
+                # 解析日志格式: 2025-09-28 20:53:48,938 - __main__ - INFO - 消息
+                log_pattern = r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) - ([^-]+) - (\w+) - (.+)'
+                
+                for line in recent_lines:
+                    line = line.strip()
+                    if not line:
+                        continue
+                        
+                    match = re.match(log_pattern, line)
+                    if match:
+                        timestamp_str, source, level, message = match.groups()
+                        
+                        # 转换时间格式
+                        try:
+                            from datetime import datetime
+                            timestamp = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S,%f')
+                            iso_timestamp = timestamp.isoformat()
+                        except:
+                            iso_timestamp = timestamp_str
+                        
+                        log_entry = {
+                            'timestamp': iso_timestamp,
+                            'level': level.lower(),
+                            'message': message.strip(),
+                            'source': source.strip()
+                        }
+                        
+                        # 应用过滤器
+                        if level_filter and log_entry['level'] != level_filter.lower():
+                            continue
+                        if search and search.lower() not in log_entry['message'].lower():
+                            continue
+                        if date_filter and not iso_timestamp.startswith(date_filter):
+                            continue
+                            
+                        parsed_logs.append(log_entry)
+                    else:
+                        # 如果无法解析，保留原始格式
+                        parsed_logs.append({
+                            'timestamp': '',
+                            'level': 'info',
+                            'message': line,
+                            'source': 'unknown'
+                        })
+                
+                # 按时间倒序排列，最新的在前
+                parsed_logs.reverse()
+                
+                # 限制结果数量
+                parsed_logs = parsed_logs[:limit]
         
-        return jsonify({"status": "success", "logs": logs})
+        return jsonify({"status": "success", "logs": parsed_logs})
     except Exception as e:
         logger.error(f"获取日志失败: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@api_bp.route('/logs/latest', methods=['GET'])
+def get_latest_logs():
+    """获取最新的日志（用于实时更新）"""
+    try:
+        import os
+        import re
+        from app.config import Config
+        
+        # 获取查询参数
+        since = request.args.get('since', '')  # 获取指定时间之后的日志
+        limit = request.args.get('limit', 50, type=int)
+        
+        log_file = Config.LOG_FILE
+        latest_logs = []
+        
+        if os.path.exists(log_file):
+            with open(log_file, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+                # 只读取最后的一些行以提高性能
+                recent_lines = lines[-limit*2:] if len(lines) > limit*2 else lines
+                
+                # 解析日志格式
+                log_pattern = r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) - ([^-]+) - (\w+) - (.+)'
+                
+                for line in recent_lines:
+                    line = line.strip()
+                    if not line:
+                        continue
+                        
+                    match = re.match(log_pattern, line)
+                    if match:
+                        timestamp_str, source, level, message = match.groups()
+                        
+                        # 转换时间格式
+                        try:
+                            from datetime import datetime
+                            timestamp = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S,%f')
+                            iso_timestamp = timestamp.isoformat()
+                        except:
+                            iso_timestamp = timestamp_str
+                        
+                        # 如果指定了since参数，只返回该时间之后的日志
+                        if since and iso_timestamp <= since:
+                            continue
+                        
+                        log_entry = {
+                            'timestamp': iso_timestamp,
+                            'level': level.lower(),
+                            'message': message.strip(),
+                            'source': source.strip()
+                        }
+                        
+                        latest_logs.append(log_entry)
+                
+                # 按时间正序排列（最新的在后面）
+                latest_logs.sort(key=lambda x: x['timestamp'])
+                
+                # 限制结果数量
+                latest_logs = latest_logs[-limit:]
+        
+        return jsonify({"status": "success", "logs": latest_logs})
+    except Exception as e:
+        logger.error(f"获取最新日志失败: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500

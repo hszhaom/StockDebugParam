@@ -109,7 +109,7 @@
                             <span class="badge bg-info">{{ task.task_type }}</span>
                         </td>
                         <td>
-                            <span class="{{ getStatusClass(task.status) }}">{{ getStatusText(task.status) }}</span>
+                            <span class="badge task-status" data-status="{{ task.status }}">{{ task.status }}</span>
                         </td>
                         <td>
                             {% if task.total_steps > 0 %}
@@ -123,9 +123,9 @@
                                 <span class="text-muted">-</span>
                             {% endif %}
                         </td>
-                        <td>{{ formatTime(task.created_at) }}</td>
+                        <td class="task-time" data-time="{{ task.created_at }}">{{ task.created_at.strftime('%Y-%m-%d %H:%M:%S') if task.created_at else '-' }}</td>
                         <td>
-                            <a href="{{ url_for('admin.tasks') }}?task_id={{ task.id }}" 
+                            <a href="/google-sheet/detail?task_id={{ task.id }}" 
                                class="btn btn-sm btn-outline-primary">
                                 <i class="bi bi-eye"></i> 查看
                             </a>
@@ -149,7 +149,7 @@
             </div>
             <div class="card-body">
                 <div class="d-grid gap-2">
-                    <a href="{{ url_for('google_sheet.create') }}" class="btn btn-primary">
+                    <a href="/google-sheet/create" class="btn btn-primary">
                         <i class="bi bi-plus-circle"></i> 创建Google Sheet任务
                     </a>
                     <a href="{{ url_for('admin.tasks') }}" class="btn btn-outline-secondary">
@@ -194,6 +194,12 @@
         // 初始化时间显示
         document.getElementById('last-update').textContent = formatTime(new Date().toISOString());
         
+        // 初始化任务状态样式
+        initializeTaskStatuses();
+        
+        // 初始化统计数据
+        loadInitialStatistics();
+        
         // 每30秒自动刷新一次
         setInterval(function() {
             // 只刷新统计数据，不刷新整个页面
@@ -214,6 +220,30 @@
             hour: '2-digit',
             minute: '2-digit',
             second: '2-digit'
+        });
+    }
+
+    // 初始化任务状态样式
+    function initializeTaskStatuses() {
+        document.querySelectorAll('.task-status').forEach(function(element) {
+            const status = element.getAttribute('data-status');
+            element.className = getStatusClass(status);  // getStatusClass已经包含了badge类
+            element.textContent = getStatusText(status);
+        });
+    }
+
+    // 初始化统计数据
+    function loadInitialStatistics() {
+        ajaxRequest('/api/tasks', 'GET', null, function(err, data) {
+            if (!err && data && data.tasks) {
+                updateStatistics(data.tasks);
+            } else {
+                // 如果加载失败，显示默认值
+                document.getElementById('total-tasks').textContent = '0';
+                document.getElementById('completed-tasks').textContent = '0';
+                document.getElementById('running-tasks').textContent = '0';
+                document.getElementById('error-tasks').textContent = '0';
+            }
         });
     }
 

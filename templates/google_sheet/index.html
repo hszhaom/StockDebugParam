@@ -24,6 +24,21 @@
             </div>
         </div>
 
+        <!-- 待重启任务提示 -->
+        <div class="alert alert-warning alert-dismissible fade show" id="pending-tasks-alert" style="display: none;">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <div class="flex-grow-1">
+                    <strong>发现待重启的任务!</strong>
+                    <span id="pending-tasks-message"></span>
+                </div>
+                <button type="button" class="btn btn-outline-warning btn-sm me-2" onclick="checkAllPendingTasks()">
+                    <i class="bi bi-search"></i> 查看详情
+                </button>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        </div>
+
         <!-- 统计概览 -->
         <div class="row mb-4">
             <div class="col-md-3">
@@ -143,6 +158,7 @@
         // 从URL参数获取当前页面和筛选条件
         loadStateFromUrl();
         loadTasks();
+        checkPendingTasks(); // 检查待重启任务
         setInterval(loadTasks, 15000); // 每15秒刷新一次任务列表
         
         // 监听浏览器前进后退按钮
@@ -252,7 +268,7 @@
                 <td>${formatTime(task.end_time)}</td>
                 <td>
                     <div class="btn-group" role="group">
-                        <a href="{{ url_for('google_sheet.detail') }}?task_id=${task.id}" class="btn btn-sm btn-info">
+                        <a href="/google-sheet/detail?task_id=${task.id}" class="btn btn-sm btn-info">
                             <i class="bi bi-eye"></i> 查看
                         </a>
                         ${task.status === 'running' ? `
@@ -394,6 +410,40 @@
             case 'running': return 'bg-primary';
             default: return 'bg-secondary';
         }
+    }
+
+    // 检查待重启的任务
+    function checkPendingTasks() {
+        ajaxRequest('/api/tasks', 'GET', null, function(err, data) {
+            if (!err && data && data.status === 'success') {
+                const pendingTasks = data.tasks.filter(task => 
+                    task.status === 'pending' && task.current_step > 0
+                );
+                
+                if (pendingTasks.length > 0) {
+                    const alertDiv = document.getElementById('pending-tasks-alert');
+                    const messageSpan = document.getElementById('pending-tasks-message');
+                    
+                    messageSpan.textContent = `检测到 ${pendingTasks.length} 个任务可能因应用重启而中断，建议检查并重新启动。`;
+                    alertDiv.style.display = 'block';
+                }
+            }
+        });
+    }
+
+    // 查看所有待重启任务详情
+    function checkAllPendingTasks() {
+        // 设置筛选条件为pending并刷新列表
+        currentFilter = 'pending';
+        updateFilterButtons();
+        applyFilter();
+        renderTasks();
+        
+        // 隐藏提示
+        const alertDiv = document.getElementById('pending-tasks-alert');
+        alertDiv.style.display = 'none';
+        
+        showNotification('已筛选出所有待处理的任务', 'info');
     }
 </script>
 {% endblock %}

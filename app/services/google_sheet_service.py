@@ -28,18 +28,14 @@ class GoogleSheetService:
         self.event_queue = event_queue
         self.app = app
 
-    def execute_task(self, task_id: str, event_queue=None, app=None):
+    def execute_task(self):
         """执行Google Sheet任务"""
         try:
-            # 保存参数到实例变量
-            self.task_id = task_id
-            self.event_queue = event_queue
-            self.app = app
             
             # 统一使用应用上下文
-            context_app = app or current_app
+            context_app = self.app or current_app
             with context_app.app_context():
-                task = Task.query.get(task_id)
+                task = Task.query.get(self.task_id)
                 if not task:
                     self._push_log('error', f'任务 {self.task_id} 不存在')
                     return False
@@ -59,7 +55,7 @@ class GoogleSheetService:
                 # 获取参数列表
                 parameters = config_data.get('parameters', [])
                 if not parameters:
-                    error_msg = f"任务 {task_id} 没有参数配置"
+                    error_msg = f"任务 {self.task_id} 没有参数配置"
                     logger.error(error_msg)
                     self._push_log('error', error_msg)
                     return False
@@ -80,7 +76,22 @@ class GoogleSheetService:
                 if stock_param is not None and stock_param != "error":
                     multiplier_index = 0 if stock_param.get('multiplier_index', 0) == 0 else stock_param.get(
                         'multiplier_index', 0) + 1
-                    success_count, failed_count = self.get_bdl(task, name, parameters, config_data, multiplier_index)
+                    success_count, failed_count, task_status = self.get_bdl(task, name, parameters, config_data, multiplier_index)
+                    
+                    # 根据任务状态决定返回结果
+                    if task_status == 'cancelled':
+                        # 任务被取消，更新数据库状态
+                        task.status = 'cancelled'
+                        db.session.commit()
+                        self._push_log('info', f'任务已取消，成功执行: {success_count}, 失败: {failed_count}')
+                        return False
+                    elif task_status == 'error':
+                        # 任务执行出错
+                        return False
+                    else:
+                        # 任务正常完成
+                        self._push_log('info', f'任务执行完成，成功: {success_count}, 失败: {failed_count}')
+                        return success_count > 0
                 elif stock_param != "error":
                     # cell_updates = {
                     #     "B6": multiplier_value,
@@ -101,12 +112,27 @@ class GoogleSheetService:
                     #     logger.error("Google Sheet连接未建立")
                     #     return False, {}
                     # time.sleep(random.randint(20, 30))
-                    # self._push_log(task_id, 'info', f'默认参数已写入到表格: {cell_updates}', event_queue)
-                    success_count, failed_count = self.get_bdl(task, name, parameters, config_data)
+                    # self._push_log(self.task_id, 'info', f'默认参数已写入到表格: {cell_updates}', event_queue)
+                    success_count, failed_count, task_status = self.get_bdl(task, name, parameters, config_data)
+                    
+                    # 根据任务状态决定返回结果
+                    if task_status == 'cancelled':
+                        # 任务被取消，更新数据库状态
+                        task.status = 'cancelled'
+                        db.session.commit()
+                        self._push_log('info', f'任务已取消，成功执行: {success_count}, 失败: {failed_count}')
+                        return False
+                    elif task_status == 'error':
+                        # 任务执行出错
+                        return False
+                    else:
+                        # 任务正常完成
+                        self._push_log('info', f'任务执行完成，成功: {success_count}, 失败: {failed_count}')
+                        # 继续执行后续逻辑
                 else:
                     logger.error("获取股票参数失败")
 
-                # success_count, failed_count = self.get_bdl(task, task_id, event_queue, app, parameters, config_data)
+                # success_count, failed_count = self.get_bdl(task, self.task_id, event_queue, app, parameters, config_data)
 
                 if success_count == 0 and failed_count == 0:
                     self._push_log('error', '任务执行失败')
@@ -119,7 +145,17 @@ class GoogleSheetService:
                 return True
 
         except Exception as e:
-            error_msg = f"执行Google Sheet任务失败: {task_id}, 错误: {str(e)}"
+            # 检查是否是任务被取消导致的异常
+            try:
+                task = Task.query.get(self.task_id)
+                if task and task.status == 'cancelled':
+                    self._push_log('info', f'任务已被取消: {str(e)}')
+                    return False
+            except:
+                pass
+            
+            # 其他异常情况
+            error_msg = f"执行Google Sheet任务失败: {self.task_id}, 错误: {str(e)}"
             logger.error(error_msg)
             self._push_log('error', error_msg)
             return False
@@ -147,18 +183,28 @@ class GoogleSheetService:
                 return 0, 0
 
 
-            for i in range(index_z, total_combinations):
+            # 检查是否从断点恢复
+            start_index = max(index_z, task.current_step - 1) if task.current_step > 0 else index_z
+            self._info(f"任务将从第 {start_index + 1} 个参数组合开始执行")
+
+            for i in range(start_index, total_combinations):
                 self._info(f"开始执行第 {i + 1}/{total_combinations} 个参数组合")
                 
                 # 按需计算参数组合，避免内存问题
                 combination = self._get_parameter_combination_by_index(parameters, i)
                 
-                # 检查任务是否被取消
-                task = Task.query.get(self.task_id)  # 重新获取任务状态
-                if not task or task.status == 'cancelled':
+                # 原子性检查任务是否被取消
+                from sqlalchemy import text
+                result = db.session.execute(
+                    text("SELECT status FROM tasks WHERE id = :task_id FOR UPDATE"),
+                    {"task_id": self.task_id}
+                ).fetchone()
+                
+                if not result or result.status == 'cancelled':
                     self._warning(f"任务已被取消，停止执行")
                     self._push_log('warning', f'任务 {self.task_id} 已被取消')
-                    return False
+                    db.session.commit()  # 释放锁
+                    return success_count, failed_count, 'cancelled'
 
                 # 推送执行进度
                 progress_msg = f'正在执行第 {i + 1}/{total_combinations} 个参数组合 {combination}'
@@ -211,6 +257,15 @@ class GoogleSheetService:
 
                 except Exception as e:
                     failed_count += 1
+                    # 检查是否是任务被取消
+                    try:
+                        task_check = Task.query.get(self.task_id)
+                        if task_check and task_check.status == 'cancelled':
+                            self._push_log('info', f'第 {i + 1} 个参数组合执行中断（任务被取消）: {str(e)}')
+                            break  # 退出循环
+                    except:
+                        pass
+                    
                     error_msg = f'第 {i + 1} 个参数组合执行出错: {str(e)}'
                     logger.error(error_msg)
                     self._push_log('error', error_msg)
@@ -218,13 +273,22 @@ class GoogleSheetService:
                 self._info(f"第 {i + 1} 个参数组合执行完成，成功: {success_count}, 失败: {failed_count}")
 
             self._info(f"批量数据处理完成，总成功: {success_count}, 总失败: {failed_count}")
-            return success_count, failed_count
+            return success_count, failed_count, 'completed'
             
         except Exception as e:
+            # 检查是否是任务被取消导致的异常
+            try:
+                task_check = Task.query.get(self.task_id)
+                if task_check and task_check.status == 'cancelled':
+                    self._push_log('info', f'批量数据处理中断（任务被取消）: {str(e)}')
+                    return success_count, failed_count, 'cancelled'
+            except:
+                pass
+            
             error_msg = f"批量数据处理失败: {str(e)}"
             logger.error(error_msg)
             self._push_log('error', error_msg)
-            return 0, 1
+            return 0, 1, 'error'
 
     @retry(
         stop=stop_after_attempt(3),  # 最多尝试3次
@@ -331,7 +395,6 @@ class GoogleSheetService:
 
             # 定时检查是否完成（最多检查60次，20-30秒）
             for attempt in range(60):
-                time.sleep(random.randint(20, 30))  
                 self._info(f"第 {attempt + 1} 次检查执行状态...")
 
                 # 检查所有位置是否都有产出
@@ -378,6 +441,9 @@ class GoogleSheetService:
 
                     self._info(f"执行结果: {results}")
                     return True, results
+
+
+                time.sleep(random.randint(20, 30))  
 
             self._warning("执行超时，未在规定时间内完成")
             self._push_log('warning', "执行超时，未在规定时间内完成")

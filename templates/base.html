@@ -80,9 +80,15 @@
                 if (!err && data && data.logs) {
                     const logContainer = document.getElementById('log-container');
                     if (logContainer) {
+                        // 保存当前滚动位置
+                        const wasAtBottom = logContainer.scrollTop + logContainer.clientHeight >= logContainer.scrollHeight - 5;
+                        
                         logContainer.innerHTML = data.logs.join('<br>');
-                        // 滚动到底部
-                        logContainer.scrollTop = logContainer.scrollHeight;
+                        
+                        // 如果之前在底部，保持滚动到底部
+                        if (wasAtBottom) {
+                            logContainer.scrollTop = logContainer.scrollHeight;
+                        }
                     }
                 }
             });
