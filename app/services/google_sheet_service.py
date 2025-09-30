@@ -3,6 +3,7 @@ import random
 import time
 from datetime import datetime
 from typing import Dict, Any, List, Optional
+from sqlalchemy import text
 
 from flask import current_app
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -12,7 +13,6 @@ from app.services.google_sheet_client import GoogleSheet
 from app.services.config_manager import get_config_manager
 from app.utils.db_stock_api import StockAPIClient
 from app.utils.logger import get_logger
-
 logger = get_logger(__name__)
 
 
@@ -194,16 +194,15 @@ class GoogleSheetService:
                 combination = self._get_parameter_combination_by_index(parameters, i)
                 
                 # 原子性检查任务是否被取消
-                from sqlalchemy import text
+                # SQLite不支持FOR UPDATE，使用简单查询
                 result = db.session.execute(
-                    text("SELECT status FROM tasks WHERE id = :task_id FOR UPDATE"),
+                    text("SELECT status FROM tasks WHERE id = :task_id"),
                     {"task_id": self.task_id}
                 ).fetchone()
                 
                 if not result or result.status == 'cancelled':
                     self._warning(f"任务已被取消，停止执行")
                     self._push_log('warning', f'任务 {self.task_id} 已被取消')
-                    db.session.commit()  # 释放锁
                     return success_count, failed_count, 'cancelled'
 
                 # 推送执行进度
@@ -253,7 +252,7 @@ class GoogleSheetService:
                     # 保存结果到数据库
                     self._save_task_result(i, combination, result, success)
                     # # 推送结果，到生产数据库
-                    # self.send_stock_template_param_data(param_load)
+                    self.send_stock_template_param_data(param_load)
 
                 except Exception as e:
                     failed_count += 1
@@ -455,52 +454,6 @@ class GoogleSheetService:
             self._push_log('error', error_msg)
             return False, {}
 
-    def _wait_for_confirmation(self, combination: List, result: Dict) -> bool:
-        """等待前端确认"""
-        if not self.event_queue:
-            return True
-
-        try:
-            self._info(f"发送第一次执行结果到前端，等待确认...")
-
-            # 发送确认请求到前端
-            self.event_queue.put({
-                "type": "first_execution_complete",
-                "data": {
-                    "params": combination,
-                    "results": result
-                }
-            })
-
-            self._info(f"已发送确认请求，等待前端响应...")
-
-            # 等待确认事件 - 需要过滤掉自己发送的事件
-            while True:
-                event = self.event_queue.get(timeout=300)  # 5分钟超时
-                self._info(f"收到事件: {event}")
-
-                # 如果是自己发送的事件，跳过
-                if event.get("type") == "first_execution_complete":
-                    self._info(f"跳过自己发送的事件，继续等待确认...")
-                    continue
-
-                # 如果是确认事件
-                if event.get("type") == "confirmation":
-                    if event.get("data", {}).get("confirmed"):
-                        self._info(f"收到前端确认，继续执行")
-                        return True
-                    else:
-                        self._info(f"收到前端拒绝确认，停止执行")
-                        return False
-
-                # 其他事件也跳过
-                self._info(f"跳过非确认事件: {event.get('type')}")
-
-        except Exception as e:
-            error_msg = f"等待确认时出错: {str(e)}"
-            logger.error(error_msg)
-            self._push_log('error', error_msg)
-            return False
 
     def _info(self, message: str):
         """记录info级别日志"""
