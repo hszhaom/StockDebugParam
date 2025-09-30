@@ -1,6 +1,7 @@
 import json
 import random
 import time
+import traceback
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 
@@ -196,7 +197,7 @@ class GoogleSheetService:
                 # 原子性检查任务是否被取消
                 from sqlalchemy import text
                 result = db.session.execute(
-                    text("SELECT status FROM tasks WHERE id = :task_id FOR UPDATE"),
+                    text("SELECT status FROM tasks WHERE id = :task_id"),
                     {"task_id": self.task_id}
                 ).fetchone()
                 
@@ -253,7 +254,7 @@ class GoogleSheetService:
                     # 保存结果到数据库
                     self._save_task_result(i, combination, result, success)
                     # # 推送结果，到生产数据库
-                    # self.send_stock_template_param_data(param_load)
+                    self.send_stock_template_param_data(param_load)
 
                 except Exception as e:
                     failed_count += 1
@@ -285,7 +286,7 @@ class GoogleSheetService:
             except:
                 pass
             
-            error_msg = f"批量数据处理失败: {str(e)}"
+            error_msg = f"批量数据处理失败: {traceback.format_exc()}"
             logger.error(error_msg)
             self._push_log('error', error_msg)
             return 0, 1, 'error'
@@ -396,7 +397,7 @@ class GoogleSheetService:
             # 定时检查是否完成（最多检查60次，20-30秒）
             for attempt in range(60):
                 self._info(f"第 {attempt + 1} 次检查执行状态...")
-
+                time.sleep(random.randint(5,10))
                 # 检查所有位置是否都有产出
                 all_completed = True
                 if self.google_sheet and check_positions:
@@ -406,7 +407,10 @@ class GoogleSheetService:
                         
                         for position in check_positions:
                             value = check_values.get(position, "")
-                            if value in ['#DIV/0!', ''] or 'target' in str(value):
+                            if '%' in value:
+                                value = float(value.replace('%', '')) / 100
+
+                            if value in ['#DIV/0!', ''] or 'target' in str(value) or float(value) != float(results[f"B{position[1:]}"]):
                                 all_completed = False
                                 break
                                 
@@ -423,7 +427,11 @@ class GoogleSheetService:
                         try:
                             result_values = self.google_sheet.get_cells_batch(result_positions)
                             for position in result_positions:
-                                results[position] = result_values.get(position, "获取失败")
+                                value = result_values.get(position, "获取失败")
+                                if '%' in value:
+                                    value = float(value.replace('%', '')) / 100
+
+                                results[position] = value
                         except Exception as e:
                             error_msg = f"批量获取结果时出错: {str(e)}"
                             logger.error(error_msg)
