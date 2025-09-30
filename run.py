@@ -82,13 +82,14 @@ if __name__ == '__main__':
     # 确保必要的目录存在
     os.makedirs('data', exist_ok=True)
     os.makedirs('logs', exist_ok=True)
-    
+
     # 初始化数据库ss
     with app.app_context():
         db.create_all()
-        
+        init_config2()
+
     # 检查并清理挂死的任务
     check_and_cleanup_dead_tasks()
 
     # 运行应用
-    app.run(debug=True, host='127.0.0.1', port=5000)
+    app.run(debug=False, host='127.0.0.1', port=5000)
