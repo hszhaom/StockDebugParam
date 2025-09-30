@@ -3207,3 +3207,26 @@ gspread.exceptions.APIError: APIError: [429]: Quota exceeded for quota metric 'R
 2025-09-28 22:01:43,067 - __main__ - INFO - 没有发现运行中的任务
 2025-09-28 22:01:43,564 - __main__ - INFO - 没有发现运行中的任务
 2025-09-28 22:01:51,941 - app.services.config_manager - INFO - 加载了 9 个配置项
+2025-09-30 17:52:53,104 - __main__ - INFO - 没有发现运行中的任务
+2025-09-30 17:52:53,606 - __main__ - INFO - 没有发现运行中的任务
+2025-09-30 17:53:00,165 - app.services.config_manager - INFO - 加载了 9 个配置项
+2025-09-30 18:06:17,758 - __main__ - INFO - 没有发现运行中的任务
+2025-09-30 18:06:18,323 - __main__ - INFO - 没有发现运行中的任务
+2025-09-30 18:06:28,808 - app.services.task_manager - INFO - 启动任务: dc8ab27b-5761-4bd1-a23f-2043b0efc86b
+2025-09-30 18:06:28,828 - app.services.config_manager - INFO - 加载了 9 个配置项
+2025-09-30 18:06:28,829 - app.services.google_sheet_service - INFO - 任务 dc8ab27b-5761-4bd1-a23f-2043b0efc86b: 开始执行Google Sheet任务
+2025-09-30 18:06:28,836 - app.services.google_sheet_service - INFO - 开始初始化Google Sheet连接
+2025-09-30 18:06:28,836 - app.services.google_sheet_service - INFO - 连接参数 - Spreadsheet ID: 1e2K0pR1roc1Uo7zVy7oo6nIMD9hiRCAFfgznl8zFpeo, Sheet: data1y, Token: data/token.json
+2025-09-30 18:06:30,763 - app.services.google_sheet_client - INFO - Google Sheet连接成功: 1e2K0pR1roc1Uo7zVy7oo6nIMD9hiRCAFfgznl8zFpeo/data1y
+2025-09-30 18:06:30,763 - app.services.google_sheet_service - INFO - Google Sheet连接初始化成功
+2025-09-30 18:06:32,003 - app.services.google_sheet_service - INFO - 任务 dc8ab27b-5761-4bd1-a23f-2043b0efc86b: 将执行 64 个参数组合
+2025-09-30 18:06:32,012 - app.services.google_sheet_service - INFO - 任务 dc8ab27b-5761-4bd1-a23f-2043b0efc86b: 任务将从第 23 个参数组合开始执行
+2025-09-30 18:06:32,012 - app.services.google_sheet_service - INFO - 任务 dc8ab27b-5761-4bd1-a23f-2043b0efc86b: 开始执行第 23/64 个参数组合
+2025-09-30 18:06:32,013 - app.services.google_sheet_service - ERROR - 批量数据处理失败: (sqlite3.OperationalError) near "FOR": syntax error
+[SQL: SELECT status FROM tasks WHERE id = ? FOR UPDATE]
+[parameters: ('dc8ab27b-5761-4bd1-a23f-2043b0efc86b',)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-30 18:06:32,013 - app.services.google_sheet_service - ERROR - 任务 dc8ab27b-5761-4bd1-a23f-2043b0efc86b: 批量数据处理失败: (sqlite3.OperationalError) near "FOR": syntax error
+[SQL: SELECT status FROM tasks WHERE id = ? FOR UPDATE]
+[parameters: ('dc8ab27b-5761-4bd1-a23f-2043b0efc86b',)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)

@@ -421,38 +421,6 @@ class TaskManager:
         except Exception as e:
             logger.error(f"添加任务日志失败: {str(e)}")
     
-    def _add_task_result(self, task_id: str, step_index: int, parameters: Dict, result: Dict, success: bool, error_message: str = None, app=None):
-        """添加任务结果"""
-        try:
-            if app:
-                # 在后台线程中使用传递的应用实例
-                with app.app_context():
-                    task_result = TaskResult(
-                        task_id=task_id,
-                        step_index=step_index,
-                        parameters=json.dumps(parameters),
-                        result=json.dumps(result),
-                        success=success,
-                        error_message=error_message
-                    )
-                    db.session.add(task_result)
-                    db.session.commit()
-            else:
-                # 在主线程中使用当前应用上下文
-                from flask import current_app
-                with current_app.app_context():
-                    task_result = TaskResult(
-                        task_id=task_id,
-                        step_index=step_index,
-                        parameters=json.dumps(parameters),
-                        result=json.dumps(result),
-                        success=success,
-                        error_message=error_message
-                    )
-                    db.session.add(task_result)
-                    db.session.commit()
-        except Exception as e:
-            logger.error(f"添加任务结果失败: {str(e)}")
 
 # 全局任务管理器实例
 task_manager = TaskManager()

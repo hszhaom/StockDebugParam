@@ -44,7 +44,7 @@ def create_task():
         if task_manager.start_task(task_id):
             return jsonify({"status": "success", "task_id": task_id, "message": "任务创建并启动成功"})
         else:
-            return jsonify({"status": "success", "task_id": task_id, "message": "任务创建成功，但启动失败"})
+            return jsonify({"status": "error", "task_id": task_id, "message": "任务创建成功，但启动失败"})
             
     except Exception as e:
         logger.error(f"创建任务失败: {str(e)}")
@@ -347,7 +347,6 @@ def get_logs():
     except Exception as e:
         logger.error(f"获取日志失败: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
-
 @api_bp.route('/logs/latest', methods=['GET'])
 def get_latest_logs():
     """获取最新的日志（用于实时更新）"""

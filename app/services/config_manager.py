@@ -28,7 +28,7 @@ class ConfigManager:
                         except (json.JSONDecodeError, TypeError):
                             pass  # 保持原始字符串
                     self._cache[config.key] = value
-                logger.info(f"加载了 {len(configs)} 个配置项")
+                logger.debug(f"加载了 {len(configs)} 个配置项")
         except Exception as e:
             logger.error(f"加载配置失败: {str(e)}")
     
