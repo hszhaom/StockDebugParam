@@ -12,6 +12,11 @@
             </button>
         </div>
         <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-info" onclick="validateConfig()">
+                <i class="bi bi-check2-square"></i> 验证配置
+            </button>
+        </div>
+        <div class="btn-group me-2">
             <button type="button" class="btn btn-sm btn-success" onclick="saveConfig()">
                 <i class="bi bi-check-circle"></i> 保存配置
             </button>
@@ -66,6 +71,45 @@
                             <label for="task_timeout" class="form-label">任务超时时间 (秒)</label>
                             <input type="number" class="form-control" id="task_timeout" value="3600" min="60" max="86400">
                             <div class="form-text">单个任务的最大执行时间</div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="task_status_check_timeout" class="form-label">任务状态检查超时 (秒)</label>
+                            <input type="number" class="form-control" id="task_status_check_timeout" value="600" min="60" max="3600">
+                            <div class="form-text">任务状态检查的超时时间</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="frontend_polling_interval" class="form-label">前端轮询间隔 (毫秒)</label>
+                            <input type="number" class="form-control" id="frontend_polling_interval" value="15000" min="5000" max="300000">
+                            <div class="form-text">前端任务列表的刷新间隔</div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="execution_delay_min" class="form-label">执行延迟最小值 (秒)</label>
+                            <input type="number" class="form-control" id="execution_delay_min" value="20" min="1" max="60">
+                            <div class="form-text">任务执行间隔的最小延迟时间</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="execution_delay_max" class="form-label">执行延迟最大值 (秒)</label>
+                            <input type="number" class="form-control" id="execution_delay_max" value="30" min="1" max="120">
+                            <div class="form-text">任务执行间隔的最大延迟时间</div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="log_polling_interval" class="form-label">日志轮询间隔 (毫秒)</label>
+                            <input type="number" class="form-control" id="log_polling_interval" value="3000" min="1000" max="30000">
+                            <div class="form-text">日志页面的轮询刷新间隔</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="api_retry_max_attempts" class="form-label">API重试最大次数</label>
+                            <input type="number" class="form-control" id="api_retry_max_attempts" value="10" min="1" max="20">
+                            <div class="form-text">API调用失败时的最大重试次数</div>
                         </div>
                     </div>
                 </form>
@@ -203,9 +247,11 @@
     });
 
     function loadConfig() {
+        console.log('开始加载配置...'); // 调试日志
         ajaxRequest('/api/config', 'GET', null, function(err, data) {
             if (!err && data && data.config) {
                 const config = data.config;
+                console.log('加载到的配置:', config); // 调试日志
                 
                 // 填充基本配置
                 document.getElementById('spreadsheet_id').value = config.spreadsheet_id || '';
@@ -214,6 +260,12 @@
                 document.getElementById('proxy_url').value = config.proxy_url || '';
                 document.getElementById('max_concurrent_tasks').value = config.max_concurrent_tasks || 5;
                 document.getElementById('task_timeout').value = config.task_timeout || 3600;
+                document.getElementById('task_status_check_timeout').value = config.task_status_check_timeout || 600;
+                document.getElementById('frontend_polling_interval').value = config.frontend_polling_interval || 15000;
+                document.getElementById('execution_delay_min').value = config.execution_delay_min || 20;
+                document.getElementById('execution_delay_max').value = config.execution_delay_max || 30;
+                document.getElementById('log_polling_interval').value = config.log_polling_interval || 3000;
+                document.getElementById('api_retry_max_attempts').value = config.api_retry_max_attempts || 10;
                 
                 // 填充高级配置
                 const advancedConfig = {};
@@ -228,7 +280,8 @@
                 
                 showNotification('配置加载成功', 'success');
             } else {
-                showNotification('加载配置失败', 'error');
+                console.error('加载配置失败:', err, data);
+                showNotification('加载配置失败: ' + (data ? data.message : '网络错误'), 'error');
             }
         });
     }
@@ -295,22 +348,29 @@
                 token_file: document.getElementById('token_file').value,
                 proxy_url: document.getElementById('proxy_url').value,
                 max_concurrent_tasks: parseInt(document.getElementById('max_concurrent_tasks').value),
-                task_timeout: parseInt(document.getElementById('task_timeout').value)
+                task_timeout: parseInt(document.getElementById('task_timeout').value),
+                task_status_check_timeout: parseInt(document.getElementById('task_status_check_timeout').value),
+                frontend_polling_interval: parseInt(document.getElementById('frontend_polling_interval').value),
+                execution_delay_min: parseInt(document.getElementById('execution_delay_min').value),
+                execution_delay_max: parseInt(document.getElementById('execution_delay_max').value),
+                log_polling_interval: parseInt(document.getElementById('log_polling_interval').value),
+                api_retry_max_attempts: parseInt(document.getElementById('api_retry_max_attempts').value)
             };
             
-            // 收集位置配置
+            // 收集位置配置 - 修复索引错位问题
             const parameter_positions = [];
             const check_positions = [];
             const result_positions = [];
             
             for (let i = 1; i <= 6; i++) {
-                const paramPos = document.getElementById(`param${i}_pos`).value;
-                const checkPos = document.getElementById(`check${i}_pos`).value;
-                const resultPos = document.getElementById(`result${i}_pos`).value;
+                const paramPos = document.getElementById(`param${i}_pos`).value.trim();
+                const checkPos = document.getElementById(`check${i}_pos`).value.trim();
+                const resultPos = document.getElementById(`result${i}_pos`).value.trim();
                 
-                if (paramPos) parameter_positions.push(paramPos);
-                if (checkPos) check_positions.push(checkPos);
-                if (resultPos) result_positions.push(resultPos);
+                // 保持数组索引一致，空值也要保存
+                parameter_positions.push(paramPos || '');
+                check_positions.push(checkPos || '');
+                result_positions.push(resultPos || '');
             }
             
             config.parameter_positions = parameter_positions;
@@ -330,10 +390,16 @@
             }
             
             // 发送保存请求
+            console.log('保存配置数据:', config); // 调试日志
             ajaxRequest('/api/config', 'POST', config, function(err, data) {
                 if (!err && data && data.status === 'success') {
-                    showNotification('配置保存成功', 'success');
+                    showNotification('配置保存成功，配置已生效', 'success');
+                    // 保存成功后重新加载配置，确保显示最新数据
+                    setTimeout(function() {
+                        loadConfig();
+                    }, 1000);
                 } else {
+                    console.error('保存配置失败:', err, data);
                     showNotification('保存配置失败: ' + (data ? data.message : '未知错误'), 'error');
                 }
             });
@@ -341,6 +407,27 @@
         } catch (e) {
             showNotification('保存配置时出错: ' + e.message, 'error');
         }
+    }
+
+    function validateConfig() {
+        console.log('开始验证配置...');
+        ajaxRequest('/api/config/validate', 'GET', null, function(err, data) {
+            if (!err && data && data.status === 'success') {
+                const validation = data.validation;
+                console.log('配置验证结果:', validation);
+                
+                let message = `配置验证结果:\n`;
+                message += `数据库配置数量: ${validation.db_size}\n`;
+                message += `缓存配置数量: ${validation.cache_size}\n`;
+                message += `Google Sheet配置: ${JSON.stringify(validation.google_sheet_config, null, 2)}`;
+                
+                alert(message);
+                showNotification('配置验证完成，请查看控制台详细信息', 'info');
+            } else {
+                console.error('配置验证失败:', err, data);
+                showNotification('配置验证失败: ' + (data ? data.message : '未知错误'), 'error');
+            }
+        });
     }
 </script>
 {% endblock %}

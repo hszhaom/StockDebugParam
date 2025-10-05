@@ -159,7 +159,12 @@
         loadStateFromUrl();
         loadTasks();
         checkPendingTasks(); // 检查待重启任务
-        setInterval(loadTasks, 15000); // 每15秒刷新一次任务列表
+        // 从后端获取轮询间隔配置
+        ajaxRequest('/api/config', 'GET', null, function(err, data) {
+            const interval = (data && data.config && data.config.frontend_polling_interval) ? 
+                            data.config.frontend_polling_interval : 15000;
+            setInterval(loadTasks, interval);
+        });
         
         // 监听浏览器前进后退按钮
         window.addEventListener('popstate', function(event) {

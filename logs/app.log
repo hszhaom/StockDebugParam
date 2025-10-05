@@ -3230,3 +3230,25 @@ gspread.exceptions.APIError: APIError: [429]: Quota exceeded for quota metric 'R
 [SQL: SELECT status FROM tasks WHERE id = ? FOR UPDATE]
 [parameters: ('dc8ab27b-5761-4bd1-a23f-2043b0efc86b',)]
 (Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-10-05 12:24:48,812 - app.services.config_manager - INFO - 设置配置: spreadsheet_id = 
+2025-10-05 12:24:48,812 - app.services.config_manager - INFO - 设置配置: sheet_name = data
+2025-10-05 12:24:48,813 - app.services.config_manager - INFO - 设置配置: token_file = data/token.json
+2025-10-05 12:24:48,814 - app.services.config_manager - INFO - 设置配置: proxy_url = None
+2025-10-05 12:24:48,814 - app.services.config_manager - INFO - 设置配置: max_concurrent_tasks = 5
+2025-10-05 12:24:48,815 - app.services.config_manager - INFO - 设置配置: task_timeout = 36000
+2025-10-05 12:24:48,815 - app.services.config_manager - INFO - 设置配置: parameter_positions = ['B6', 'B7', 'B9', 'B10', 'B11', 'B12']
+2025-10-05 12:24:48,816 - app.services.config_manager - INFO - 设置配置: check_positions = ['I6', 'I7', 'I9', 'I10', 'I11', 'I12']
+2025-10-05 12:24:48,817 - app.services.config_manager - INFO - 设置配置: result_positions = ['I15', 'I16', 'I17', 'I18', 'I19', 'I20', 'I21', 'I22', 'I23']
+2025-10-05 12:24:48,818 - __main__ - INFO - 没有发现运行中的任务
+2025-10-05 12:24:58,464 - app.services.config_manager - INFO - 设置配置: spreadsheet_id = 
+2025-10-05 12:24:58,465 - app.services.config_manager - INFO - 设置配置: sheet_name = data
+2025-10-05 12:24:58,466 - app.services.config_manager - INFO - 设置配置: token_file = data/token.json
+2025-10-05 12:24:58,466 - app.services.config_manager - INFO - 设置配置: proxy_url = None
+2025-10-05 12:24:58,467 - app.services.config_manager - INFO - 设置配置: max_concurrent_tasks = 5
+2025-10-05 12:24:58,467 - app.services.config_manager - INFO - 设置配置: task_timeout = 36000
+2025-10-05 12:24:58,468 - app.services.config_manager - INFO - 设置配置: parameter_positions = ['B6', 'B7', 'B9', 'B10', 'B11', 'B12']
+2025-10-05 12:24:58,469 - app.services.config_manager - INFO - 设置配置: check_positions = ['I6', 'I7', 'I9', 'I10', 'I11', 'I12']
+2025-10-05 12:24:58,469 - app.services.config_manager - INFO - 设置配置: result_positions = ['I15', 'I16', 'I17', 'I18', 'I19', 'I20', 'I21', 'I22', 'I23']
+2025-10-05 12:24:58,470 - __main__ - INFO - 没有发现运行中的任务
+2025-10-05 12:46:39,321 - app.services.config_manager - INFO - 设置配置: sheet_name = test_verification
+2025-10-05 12:46:39,330 - app.services.config_manager - INFO - 设置配置: sheet_name = data

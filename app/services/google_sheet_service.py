@@ -450,7 +450,11 @@ class GoogleSheetService:
                     return True, results
 
 
-                time.sleep(random.randint(20, 30))  
+                # 从配置获取执行延迟时间
+                config_manager = get_config_manager()
+                delay_min = config_manager.get_config('execution_delay_min', 20)
+                delay_max = config_manager.get_config('execution_delay_max', 30)
+                time.sleep(random.randint(delay_min, delay_max))  
 
             self._warning("执行超时，未在规定时间内完成")
             self._push_log('warning', "执行超时，未在规定时间内完成")

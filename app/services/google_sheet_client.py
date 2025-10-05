@@ -241,8 +241,16 @@ class GoogleSheet:
                     results[cell_ref] = ""
             return results
 
-    def get_trade_count_with_retry(self, cell_ref, max_retries=10, delay=30):
+    def get_trade_count_with_retry(self, cell_ref, max_retries=None, delay=None):
         """带重试机制获取交易数量"""
+        # 从配置获取重试参数
+        from app.services.config_manager import get_config_manager
+        config_manager = get_config_manager()
+        if max_retries is None:
+            max_retries = config_manager.get_config('api_retry_max_attempts', 10)
+        if delay is None:
+            delay = config_manager.get_config('api_retry_delay', 30)
+            
         retry_count = 0
         while retry_count < max_retries:
             try:

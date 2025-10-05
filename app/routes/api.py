@@ -216,7 +216,10 @@ def get_config():
     """获取系统配置"""
     try:
         config_manager = get_config_manager()
+        # 强制刷新缓存，确保获取最新配置
+        config_manager.refresh_cache()
         configs = config_manager.get_all_configs()
+        logger.debug(f"返回配置数据: {configs}")
         return jsonify({"status": "success", "config": configs})
     except Exception as e:
         logger.error(f"获取配置失败: {str(e)}")
@@ -230,10 +233,15 @@ def update_config():
         if not data:
             return jsonify({"status": "error", "message": "请求数据为空"}), 400
         
+        logger.info(f"接收到配置更新请求: {data}")
+        
         config_manager = get_config_manager()
         success = config_manager.update_configs(data)
         if success:
-            return jsonify({"status": "success", "message": "配置更新成功"})
+            # 强制刷新缓存，确保配置立即生效
+            config_manager.refresh_cache()
+            logger.info("配置更新成功，缓存已刷新")
+            return jsonify({"status": "success", "message": "配置更新成功，已立即生效"})
         else:
             return jsonify({"status": "error", "message": "配置更新失败"}), 500
     except Exception as e:
@@ -267,6 +275,50 @@ def update_google_sheet_config():
             return jsonify({"status": "error", "message": "Google Sheet配置更新失败"}), 500
     except Exception as e:
         logger.error(f"更新Google Sheet配置失败: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@api_bp.route('/config/refresh', methods=['POST'])
+def refresh_config():
+    """强制刷新配置缓存"""
+    try:
+        config_manager = get_config_manager()
+        config_manager.refresh_cache()
+        return jsonify({"status": "success", "message": "配置缓存已刷新"})
+    except Exception as e:
+        logger.error(f"刷新配置缓存失败: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@api_bp.route('/config/validate', methods=['GET'])
+def validate_config():
+    """验证配置状态"""
+    try:
+        config_manager = get_config_manager()
+        
+        # 获取数据库中的配置
+        from app.models import SystemConfig
+        db_configs = {}
+        configs = SystemConfig.query.all()
+        for config in configs:
+            db_configs[config.key] = config.value
+        
+        # 获取缓存中的配置
+        cache_configs = config_manager._cache.copy()
+        
+        # 获取Google Sheet配置
+        gs_config = config_manager.get_google_sheet_config()
+        
+        return jsonify({
+            "status": "success",
+            "validation": {
+                "database_configs": db_configs,
+                "cache_configs": cache_configs,
+                "google_sheet_config": gs_config,
+                "cache_size": len(cache_configs),
+                "db_size": len(db_configs)
+            }
+        })
+    except Exception as e:
+        logger.error(f"验证配置失败: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @api_bp.route('/logs', methods=['GET'])

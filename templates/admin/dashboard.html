@@ -200,15 +200,20 @@
         // 初始化统计数据
         loadInitialStatistics();
         
-        // 每30秒自动刷新一次
-        setInterval(function() {
-            // 只刷新统计数据，不刷新整个页面
-            ajaxRequest('/api/tasks', 'GET', null, function(err, data) {
-                if (!err && data && data.tasks) {
-                    updateStatistics(data.tasks);
-                }
-            });
-        }, 30000);
+        // 从后端获取仪表板刷新间隔配置
+        ajaxRequest('/api/config', 'GET', null, function(err, configData) {
+            const interval = (configData && configData.config && configData.config.dashboard_refresh_interval) ? 
+                            configData.config.dashboard_refresh_interval : 30000;
+            
+            setInterval(function() {
+                // 只刷新统计数据，不刷新整个页面
+                ajaxRequest('/api/tasks', 'GET', null, function(err, data) {
+                    if (!err && data && data.tasks) {
+                        updateStatistics(data.tasks);
+                    }
+                });
+            }, interval);
+        });
     });
 
     function formatTime(dateString) {

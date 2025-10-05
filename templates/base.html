@@ -97,7 +97,12 @@
         // 启动日志轮询
         function startLogPolling() {
             fetchLogs();
-            setInterval(fetchLogs, 3000); // 每3秒获取一次日志
+            // 从配置获取日志轮询间隔
+            ajaxRequest('/api/config', 'GET', null, function(err, data) {
+                const interval = (data && data.config && data.config.log_polling_interval) ? 
+                                data.config.log_polling_interval : 3000;
+                setInterval(fetchLogs, interval);
+            });
         }
     </script>
 
