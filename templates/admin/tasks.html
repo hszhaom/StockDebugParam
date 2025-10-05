@@ -228,7 +228,12 @@
     document.addEventListener('DOMContentLoaded', function() {
         loadTasks();
         // 每30秒自动刷新一次
-        setInterval(loadTasks, 30000);
+        // 从配置获取管理页面任务刷新间隔
+        ajaxRequest('/api/config', 'GET', null, function(err, data) {
+            const interval = (data && data.config && data.config.tasks_admin_refresh_interval) ? 
+                            data.config.tasks_admin_refresh_interval : 30000;
+            setInterval(loadTasks, interval);
+        });
     });
 
     function loadTasks() {

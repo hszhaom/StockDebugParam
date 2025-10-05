@@ -332,7 +332,7 @@
     let currentResultsPage = 1;
     let resultsPerPage = 10;
     let currentResultsFilter = 'all';
-    let currentRefreshFrequency = 60000; // 默认1分钟
+    let currentRefreshFrequency = 60000; // 默认1分钟，将从配置加载
     let taskStartTime = null; // 存储任务开始时间
 
     // 页面加载完成后获取任务详情
@@ -341,10 +341,22 @@
         currentTaskId = getTaskIdFromUrl();
         console.log('获取到的任务ID:', currentTaskId);
         if (currentTaskId) {
-            loadTaskDetail();
-            initializeRefreshControls();
-            // 启动自动刷新
-            startAutoRefresh();
+            // 从配置加载默认刷新频率
+            ajaxRequest('/api/config', 'GET', null, function(err, data) {
+                if (!err && data && data.config && data.config.detail_refresh_interval) {
+                    currentRefreshFrequency = data.config.detail_refresh_interval;
+                    // 更新下拉框的默认选择
+                    const frequencySelect = document.getElementById('refresh-frequency');
+                    if (frequencySelect) {
+                        frequencySelect.value = currentRefreshFrequency;
+                    }
+                }
+                
+                loadTaskDetail();
+                initializeRefreshControls();
+                // 启动自动刷新
+                startAutoRefresh();
+            });
         } else {
             showNotification('任务ID无效', 'error');
         }

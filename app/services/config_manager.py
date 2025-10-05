@@ -37,13 +37,32 @@ class ConfigManager:
         # 如果缓存为空，尝试加载配置
         if not self._cache:
             self._load_configs()
+        
+        # 如果缓存中没有该配置，尝试从数据库重新加载
+        if key not in self._cache:
+            try:
+                from flask import current_app
+                with current_app.app_context():
+                    config = SystemConfig.query.filter_by(key=key).first()
+                    if config:
+                        # 尝试反序列化JSON字符串
+                        value = config.value
+                        if isinstance(value, str) and value.startswith(('{', '[')):
+                            try:
+                                value = json.loads(value)
+                            except (json.JSONDecodeError, TypeError):
+                                pass  # 保持原始字符串
+                        self._cache[key] = value
+                        return value
+            except Exception as e:
+                logger.error(f"从数据库加载配置失败: {key}, 错误: {str(e)}")
+        
         return self._cache.get(key, default)
     
     def get_all_configs(self) -> Dict[str, Any]:
         """获取所有配置"""
-        # 如果缓存为空，尝试加载配置
-        if not self._cache:
-            self._load_configs()
+        # 强制重新加载配置，确保获取最新数据
+        self._load_configs()
         return self._cache.copy()
     
     def set_config(self, key: str, value: Any, description: str = None) -> bool:
@@ -109,7 +128,14 @@ class ConfigManager:
         """批量更新配置"""
         try:
             for key, value in configs.items():
-                self.set_config(key, value)
+                success = self.set_config(key, value)
+                if not success:
+                    logger.error(f"更新配置失败: {key}")
+                    return False
+            
+            # 强制重新加载缓存，确保其他进程/线程能获取到最新配置
+            self._load_configs()
+            
             logger.info(f"批量更新了 {len(configs)} 个配置项")
             return True
         except Exception as e:
@@ -118,6 +144,9 @@ class ConfigManager:
     
     def get_google_sheet_config(self) -> Dict[str, Any]:
         """获取Google Sheet相关配置"""
+        # 强制刷新缓存，确保获取最新配置
+        self._load_configs()
+        
         param_positions = self.get_config('parameter_positions', [])
         check_positions = self.get_config('check_positions', [])
         result_positions = self.get_config('result_positions', [])
@@ -147,10 +176,20 @@ class ConfigManager:
         try:
             for key, value in config.items():
                 self.set_config(key, value)
+            # 强制刷新缓存
+            self._load_configs()
             return True
         except Exception as e:
             logger.error(f"设置Google Sheet配置失败: {str(e)}")
             return False
+    
+    def refresh_cache(self):
+        """强制刷新配置缓存"""
+        try:
+            self._load_configs()
+            logger.info("配置缓存已刷新")
+        except Exception as e:
+            logger.error(f"刷新配置缓存失败: {str(e)}")
 
 # 全局配置管理器实例
 config_manager = None

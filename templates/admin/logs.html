@@ -98,12 +98,17 @@
             loadLogs();
         }, 100);
         
-        // 每5秒自动刷新一次
-        refreshInterval = setInterval(function() {
-            if (autoRefresh) {
-                loadLogs();
-            }
-        }, 5000);
+        // 从配置获取日志刷新间隔
+        ajaxRequest('/api/config', 'GET', null, function(err, data) {
+            const interval = (data && data.config && data.config.log_polling_interval) ? 
+                            data.config.log_polling_interval : 5000;
+            
+            refreshInterval = setInterval(function() {
+                if (autoRefresh) {
+                    loadLogs();
+                }
+            }, interval);
+        });
     });
 
     // 页面卸载时清理定时器
@@ -294,9 +299,15 @@
             lastLogTimestamp = filteredLogs[0].timestamp;
         }
         
-        realtimeInterval = setInterval(function() {
-            fetchLatestLogs();
-        }, 3000); // 每3秒检查一次新日志
+        // 从配置获取实时更新间隔
+        ajaxRequest('/api/config', 'GET', null, function(err, data) {
+            const interval = (data && data.config && data.config.log_realtime_interval) ? 
+                            data.config.log_realtime_interval : 3000;
+            
+            realtimeInterval = setInterval(function() {
+                fetchLatestLogs();
+            }, interval);
+        });
     }
 
     // 停止实时更新

@@ -34,10 +34,11 @@ class Config:
 
 def init_config():
     from app.services.config_manager import get_config_manager
+    from app.models import SystemConfig
     
-    # 检查是否已经初始化过
     config_manager = get_config_manager()
     
+    # 默认配置 - 只在配置不存在时设置
     default_configs = {
         'spreadsheet_id': '',
         'sheet_name': 'data',
@@ -45,6 +46,17 @@ def init_config():
         'proxy_url': None,
         'max_concurrent_tasks': 5,
         'task_timeout': 36000,
+        'task_status_check_timeout': 600,  # 10分钟，任务状态检查超时
+        'execution_delay_min': 20,  # 执行延迟最小值（秒）
+        'execution_delay_max': 30,  # 执行延迟最大值（秒）
+        'api_retry_max_attempts': 10,  # API重试最大次数
+        'api_retry_delay': 30,  # API重试延迟（秒）
+        'frontend_polling_interval': 15000,  # 前端轮询间隔（毫秒）
+        'dashboard_refresh_interval': 30000,  # 仪表板刷新间隔（毫秒）
+        'detail_refresh_interval': 60000,  # 详情页刷新间隔（毫秒）
+        'log_polling_interval': 3000,  # 日志轮询间隔（毫秒）
+        'log_realtime_interval': 3000,  # 日志实时更新间隔（毫秒）
+        'tasks_admin_refresh_interval': 30000,  # 管理页面任务刷新间隔（毫秒）
         'parameter_positions': [
             'B6',
             'B7',
@@ -74,6 +86,12 @@ def init_config():
         ]
     }
     
+    # 只设置不存在的配置项，避免覆盖用户修改的配置
     for key, value in default_configs.items():
-        config_manager.set_config(key, value)
+        existing_config = SystemConfig.query.filter_by(key=key).first()
+        if not existing_config:
+            config_manager.set_config(key, value)
+            print(f"初始化默认配置: {key}")
+        else:
+            print(f"配置已存在，跳过: {key}")
     

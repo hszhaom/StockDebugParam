@@ -10,6 +10,7 @@ from app.models import Task, TaskLog, TaskResult, db
 from app.services.google_sheet_service import GoogleSheetService
 from app.utils.logger import get_logger
 from app.utils.database import transaction_required, safe_delete, safe_update, safe_create
+from app.services.config_manager import get_config_manager
 
 logger = get_logger(__name__)
 
@@ -19,7 +20,12 @@ class TaskManager:
     def __init__(self):
         self.running_tasks: Dict[str, threading.Thread] = {}
         self.task_events: Dict[str, queue.Queue] = {}
-        self.max_concurrent_tasks = 5
+        # 不再在初始化时缓存配置，而是每次动态获取
+    
+    def _get_config(self, key: str, default: Any = None) -> Any:
+        """动态获取配置，确保实时生效"""
+        config_manager = get_config_manager()
+        return config_manager.get_config(key, default)
     
     @transaction_required
     def create_task(self, name: str, description: str, task_type: str, config: Dict[str, Any]) -> str:
@@ -44,8 +50,11 @@ class TaskManager:
     
     def start_task(self, task_id: str) -> bool:
         """启动任务"""
-        if len(self.running_tasks) >= self.max_concurrent_tasks:
-            logger.warning(f"任务队列已满，无法启动任务: {task_id}")
+        # 动态获取最大并发任务数配置，确保实时生效
+        max_concurrent = self._get_config('max_concurrent_tasks', 5)
+        
+        if len(self.running_tasks) >= max_concurrent:
+            logger.warning(f"任务队列已满，无法启动任务: {task_id} (最大并发数: {max_concurrent})")
             return False
         
         task = Task.query.get(task_id)
@@ -147,14 +156,17 @@ class TaskManager:
             status_check["can_restart"] = True
             status_check["restart_reason"] = "任务在数据库中显示为运行状态，但内存中没有对应的线程"
         elif db_status == 'running' and memory_running:
-            # 检查是否长时间没有更新（超过10分钟）
+            # 检查是否长时间没有更新
             import datetime
+            timeout_seconds = self._get_config('task_status_check_timeout', 600)  # 默认10分钟
+            
             now = datetime.datetime.now()
             if latest_log:
                 time_diff = now - latest_log.timestamp
-                if time_diff.total_seconds() > 600:  # 10分钟
+                if time_diff.total_seconds() > timeout_seconds:
+                    timeout_minutes = timeout_seconds // 60
                     status_check["can_restart"] = True
-                    status_check["restart_reason"] = f"任务超过10分钟没有日志更新，可能已挂死"
+                    status_check["restart_reason"] = f"任务超过{timeout_minutes}分钟没有日志更新，可能已挂死"
             else:
                 status_check["restart_reason"] = "任务正在正常运行"
         else:
