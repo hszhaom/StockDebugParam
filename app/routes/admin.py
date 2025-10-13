@@ -41,3 +41,13 @@ def config():
 def logs():
     """日志管理页面"""
     return render_template('admin/logs.html')
+
+@admin_bp.route('/templates')
+def templates():
+    """任务模板管理页面"""
+    return render_template('admin/templates.html')
+
+@admin_bp.route('/results')
+def results():
+    """任务结果管理页面"""
+    return render_template('admin/results.html')

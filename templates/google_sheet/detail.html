@@ -459,9 +459,12 @@
                 }
                 
                 // 计算执行时长
-                const startTime = new Date(task.start_time);
-                const endTime = task.end_time ? new Date(task.end_time) : new Date();
-                const duration = Math.round((endTime - startTime) / 1000);
+                let duration = 0;
+                if (task.start_time) {
+                    const startTime = new Date(task.start_time);
+                    const endTime = task.end_time ? new Date(task.end_time) : new Date();
+                    duration = Math.max(0, Math.round((endTime - startTime) / 1000)); // 确保不为负数
+                }
                 document.getElementById('execution-duration').textContent = formatDuration(duration);
                 
                 // 显示/隐藏错误信息

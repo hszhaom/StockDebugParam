@@ -22,7 +22,15 @@
                                         <i class="bi bi-info-circle"></i> 任务基本信息
                                     </h5>
                                     <div class="row">
-                                        <div class="col-md-8 mb-3">
+                                        <div class="col-md-4 mb-3">
+                                            <label for="task_template" class="form-label">选择模板</label>
+                                            <select class="form-select" id="task_template">
+                                                <option value="">不使用模板</option>
+                                                <!-- 模板列表将通过JavaScript动态加载 -->
+                                            </select>
+                                            <div class="form-text">选择一个已保存的任务模板来快速填充配置</div>
+                                        </div>
+                                        <div class="col-md-4 mb-3">
                                             <label for="task_name" class="form-label">任务名称</label>
                                             <input type="text" class="form-control" id="task_name" 
                                                    placeholder="留空将自动生成任务名称" 
@@ -259,6 +267,9 @@
                                 <button type="button" class="btn btn-outline-warning me-md-2" onclick="clearSavedFormData()" title="清除保存的表单数据">
                                     <i class="bi bi-trash"></i> 清除数据
                                 </button>
+                                <button type="button" class="btn btn-outline-success me-md-2" onclick="saveAsTemplate()" title="将当前配置保存为模板">
+                                    <i class="bi bi-save"></i> 保存为模板
+                                </button>
                                 <button type="submit" class="btn btn-primary btn-lg" id="execute-btn">
                                     <i class="bi bi-play-circle"></i> 创建任务并执行
                                 </button>
@@ -322,6 +333,34 @@
     </div>
 </div>
 
+<!-- 保存模板模态框 -->
+<div class="modal fade" id="saveTemplateModal" tabindex="-1" aria-labelledby="saveTemplateModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="saveTemplateModalLabel">保存为模板</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="saveTemplateForm">
+                    <div class="mb-3">
+                        <label for="templateName" class="form-label">模板名称</label>
+                        <input type="text" class="form-control" id="templateName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="templateDescription" class="form-label">模板描述</label>
+                        <textarea class="form-control" id="templateDescription" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="submitTemplate()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- 任务执行状态模态框 -->
 <div class="modal fade" id="taskStatusModal" tabindex="-1" aria-labelledby="taskStatusModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -353,15 +392,204 @@
     let currentTaskId = null;
     let eventSource = null;
 
+    // 从模板加载数据
+    function loadFromTemplate(template) {
+        if (!template) return;
+        
+        try {
+            // 填充基本信息
+            if (template.name) {
+                document.getElementById('task_name').value = template.name;
+            }
+            if (template.description) {
+                document.getElementById('task_description').value = template.description;
+            }
+            
+            // 填充配置信息
+            if (template.config) {
+                let config = template.config;
+                if (typeof config === 'string') {
+                    config = JSON.parse(config);
+                }
+                
+                if (config.spreadsheet_id) {
+                    document.getElementById('spreadsheet').value = config.spreadsheet_id;
+                }
+                
+                if (config.sheet_name) {
+                    const sheetSelect = document.getElementById('sheet_name');
+                    const options = Array.from(sheetSelect.options).map(opt => opt.value);
+                    if (options.includes(config.sheet_name)) {
+                        sheetSelect.value = config.sheet_name;
+                    } else {
+                        sheetSelect.value = '自定义';
+                        document.getElementById('custom_sheet_name').value = config.sheet_name;
+                        document.getElementById('custom-sheet-container').style.display = 'block';
+                    }
+                }
+                
+                if (config.token_type) {
+                    document.getElementById('token_type').value = config.token_type;
+                    document.getElementById('token_type').dispatchEvent(new Event('change'));
+                }
+                
+                if (config.token_file) {
+                    document.getElementById('token_file').value = config.token_file;
+                }
+                
+                if (config.token_json) {
+                    document.getElementById('token_json').value = config.token_json;
+                }
+                
+                if (config.proxy_url) {
+                    document.getElementById('proxy_url').value = config.proxy_url;
+                }
+                
+                // 填充参数配置
+                if (config.parameters && Array.isArray(config.parameters)) {
+                    config.parameters.forEach((param, index) => {
+                        const paramId = `param${index + 1}`;
+                        const paramElement = document.getElementById(paramId);
+                        if (paramElement && Array.isArray(param)) {
+                            paramElement.value = JSON.stringify(param);
+                        }
+                    });
+                }
+                
+                // 更新组合计算
+                calculateCombinations();
+                showNotification('已加载模板配置', 'success');
+                
+                // 更新页面标题和提示
+                {% if template_id %}
+                document.title = '从模板创建任务 - Google Sheet 参数批量校验';
+                const cardHeader = document.querySelector('.card-header h4');
+                if (cardHeader) {
+                    cardHeader.innerHTML = '<i class="bi bi-file-earmark-text"></i> 从模板创建任务';
+                }
+                {% endif %}
+            }
+        } catch (error) {
+            console.error('加载模板失败:', error);
+            showError('加载模板配置失败: ' + error.message);
+        }
+    }
+
     // 页面加载完成后绑定事件
     document.addEventListener('DOMContentLoaded', function() {
         bindEvents();
-        loadRestartConfig(); // 先加载重启配置
-        loadSavedFormData(); // 然后加载保存的表单数据
+        loadTemplates(); // 加载模板列表
+        
+        // 检查是否有模板数据
+        {% if template %}
+            loadFromTemplate({{ template | tojson | safe }});
+        {% else %}
+            loadRestartConfig(); // 先加载重启配置
+            loadSavedFormData(); // 然后加载保存的表单数据
+        {% endif %}
+        
         calculateCombinations();
     });
 
+    // 加载模板列表
+    function loadTemplates() {
+        fetch('/api/templates')
+            .then(response => response.json())
+            .then(data => {
+                if (!data || !data.status === 'success' || !Array.isArray(data.templates)) {
+                    console.error('Invalid response format:', data);
+                    return;
+                }
+                
+                const templateSelect = document.getElementById('task_template');
+                data.templates.forEach(template => {
+                    const option = document.createElement('option');
+                    option.value = template.id;
+                    option.textContent = template.name;
+                    templateSelect.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('加载模板列表失败:', error);
+                showError('加载模板列表失败');
+            });
+    }
+
+    // 使用模板填充表单
+    function fillFormWithTemplate(templateId) {
+        if (!templateId) {
+            return;
+        }
+
+        fetch(`/api/templates/${templateId}`)
+            .then(response => response.json())
+            .then(template => {
+                const config = template.config;
+                if (typeof config === 'string') {
+                    try {
+                        config = JSON.parse(config);
+                    } catch (e) {
+                        console.error('解析模板配置失败:', e);
+                        return;
+                    }
+                }
+
+                // 填充Google Sheet配置
+                if (config.spreadsheet_id) {
+                    document.getElementById('spreadsheet').value = config.spreadsheet_id;
+                }
+                if (config.sheet_name) {
+                    const sheetSelect = document.getElementById('sheet_name');
+                    const options = Array.from(sheetSelect.options).map(opt => opt.value);
+                    if (options.includes(config.sheet_name)) {
+                        sheetSelect.value = config.sheet_name;
+                    } else {
+                        sheetSelect.value = '自定义';
+                        document.getElementById('custom_sheet_name').value = config.sheet_name;
+                        document.getElementById('custom-sheet-container').style.display = 'block';
+                    }
+                }
+                if (config.token_type) {
+                    document.getElementById('token_type').value = config.token_type;
+                    document.getElementById('token_type').dispatchEvent(new Event('change'));
+                }
+                if (config.token_file) {
+                    document.getElementById('token_file').value = config.token_file;
+                }
+                if (config.token_json) {
+                    document.getElementById('token_json').value = config.token_json;
+                }
+                if (config.proxy_url) {
+                    document.getElementById('proxy_url').value = config.proxy_url;
+                }
+
+                // 填充参数配置
+                if (config.parameters && Array.isArray(config.parameters)) {
+                    config.parameters.forEach((param, index) => {
+                        const paramId = `param${index + 1}`;
+                        const paramElement = document.getElementById(paramId);
+                        if (paramElement && Array.isArray(param)) {
+                            paramElement.value = JSON.stringify(param);
+                        }
+                    });
+                }
+
+                // 更新组合计算
+                calculateCombinations();
+                showNotification('已加载模板配置', 'success');
+            })
+            .catch(error => {
+                console.error('加载模板详情失败:', error);
+                showNotification('加载模板失败', 'error');
+            });
+    }
+
     function bindEvents() {
+        // 模板选择变化事件
+        document.getElementById('task_template').addEventListener('change', function() {
+            fillFormWithTemplate(this.value);
+        });
+
         // 任务名称和描述变化事件
         document.getElementById('task_name').addEventListener('input', saveFormData);
         document.getElementById('task_description').addEventListener('input', saveFormData);
@@ -786,6 +1014,140 @@
         } catch (e) {
             console.warn('无法清除localStorage数据:', e);
         }
+    }
+
+    // 保存为模板
+    function saveAsTemplate() {
+        // 获取当前配置
+        const config = getCurrentConfig();
+        if (!config) {
+            return;
+        }
+
+        // 预填充模板名称（如果有任务名称）
+        const taskName = document.getElementById('task_name').value.trim();
+        if (taskName) {
+            document.getElementById('templateName').value = taskName + ' 模板';
+        }
+
+        // 显示保存模板对话框
+        const modal = new bootstrap.Modal(document.getElementById('saveTemplateModal'));
+        modal.show();
+    }
+
+    // 获取当前配置
+    function getCurrentConfig() {
+        try {
+            const spreadsheetInput = document.getElementById('spreadsheet').value;
+            const spreadsheetId = extractSpreadsheetId(spreadsheetInput);
+            const sheetNameSelect = document.getElementById('sheet_name').value;
+            const customSheetName = document.getElementById('custom_sheet_name').value;
+            const sheetName = sheetNameSelect === '自定义' ? customSheetName : sheetNameSelect;
+            const tokenType = document.getElementById('token_type').value;
+            const tokenFile = document.getElementById('token_file').value;
+            const tokenJson = document.getElementById('token_json').value;
+            const proxyUrl = document.getElementById('proxy_url').value;
+
+            // 验证必要字段
+            if (!spreadsheetId) {
+                showError('请输入电子表格ID或URL');
+                return null;
+            }
+
+            if (sheetNameSelect === '自定义' && !customSheetName) {
+                showError('请输入自定义工作表名称');
+                return null;
+            }
+
+            if (tokenType === 'file' && !tokenFile) {
+                showError('请输入Token文件路径');
+                return null;
+            }
+
+            if (tokenType === 'json' && !tokenJson) {
+                showError('请输入Token JSON字符串');
+                return null;
+            }
+
+            // 获取所有参数
+            const param1 = parseJsonArray(document.getElementById('param1').value);
+            const param2 = parseJsonArray(document.getElementById('param2').value);
+            const param3 = parseJsonArray(document.getElementById('param3').value);
+            const param4 = parseJsonArray(document.getElementById('param4').value);
+            const param5 = parseJsonArray(document.getElementById('param5').value);
+            const param6 = parseJsonArray(document.getElementById('param6').value);
+
+            // 检查是否有解析错误
+            if (param1 === null || param2 === null || param3 === null || param4 === null || param5 === null || param6 === null) {
+                showError('参数格式错误，请检查JSON格式');
+                return null;
+            }
+
+            // 构造配置对象
+            return {
+                spreadsheet_id: spreadsheetId,
+                sheet_name: sheetName,
+                token_type: tokenType,
+                token_file: tokenFile,
+                token_json: tokenJson,
+                proxy_url: proxyUrl || null,
+                parameters: [param1, param2, param3, param4, param5, param6]
+            };
+        } catch (error) {
+            console.error('获取当前配置失败:', error);
+            showError('获取当前配置失败: ' + error.message);
+            return null;
+        }
+    }
+
+    // 提交模板
+    function submitTemplate() {
+        const config = getCurrentConfig();
+        if (!config) {
+            return;
+        }
+
+        const name = document.getElementById('templateName').value.trim();
+        const description = document.getElementById('templateDescription').value.trim();
+
+        if (!name) {
+            showError('请输入模板名称');
+            return;
+        }
+
+        const templateData = {
+            name: name,
+            description: description,
+            config: config
+        };
+
+        fetch('/api/templates', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(templateData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                const modal = document.getElementById('saveTemplateModal');
+                const modalInstance = bootstrap.Modal.getInstance(modal);
+                if (modalInstance) {
+                    modalInstance.hide();
+                }
+                showNotification('模板保存成功', 'success');
+                
+                // 重新加载模板列表
+                loadTemplates();
+            } else {
+                showError(data.message || '保存模板失败');
+            }
+        })
+        .catch(error => {
+            console.error('保存模板失败:', error);
+            showError('保存模板失败: ' + error.message);
+        });
     }
 
     // 加载重启配置
