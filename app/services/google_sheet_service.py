@@ -368,10 +368,34 @@ class GoogleSheetService:
 
             self.google_sheet = GoogleSheet(spreadsheet_id, sheet_name, token_file, proxy_url)
             self._log_info("Google Sheet连接初始化成功")
-
         except Exception as e:
             error_msg = f"初始化Google Sheet连接失败: {str(e)}"
             self._log_error(error_msg)
+            raise
+            
+    @staticmethod
+    def get_worksheets(spreadsheet_id: str, token_file: str = "data/token.json", proxy_url: str = None) -> List[str]:
+        """
+        获取指定电子表格中的所有工作表名称
+        
+        Args:
+            spreadsheet_id: 电子表格ID
+            token_file: 认证文件路径
+            proxy_url: 代理URL
+            
+        Returns:
+            工作表名称列表
+        """
+        try:
+            # 使用上下文管理器确保连接被正确关闭
+            with GoogleSheet(spreadsheet_id, None, token_file, proxy_url) as google_sheet:
+                # 获取所有工作表名称
+                worksheets = google_sheet.get_all_worksheets()
+                if not worksheets:
+                    raise ValueError("未找到任何工作表")
+                return worksheets
+        except Exception as e:
+            logger.error(f"获取工作表列表失败: {str(e)}")
             raise
 
 
