@@ -56,7 +56,7 @@ class TaskLog(db.Model):
     """任务日志模型"""
     __tablename__ = 'task_logs'
     
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     task_id = db.Column(db.String(36), db.ForeignKey('tasks.id'), nullable=False)
     level = db.Column(db.String(20), default='info')  # info, warning, error
     message = db.Column(db.Text, nullable=False)
@@ -74,7 +74,7 @@ class TaskResult(db.Model):
     """任务结果模型"""
     __tablename__ = 'task_results'
     
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     task_id = db.Column(db.String(36), db.ForeignKey('tasks.id'), nullable=False)
     step_index = db.Column(db.Integer, nullable=False)
     parameters = db.Column(db.Text)  # JSON格式的参数
@@ -94,11 +94,32 @@ class TaskResult(db.Model):
             'timestamp': self.timestamp.isoformat()
         }
 
+class TaskTemplate(db.Model):
+    """任务模板模型"""
+    __tablename__ = 'task_templates'
+    
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(255), nullable=False, index=True)  # 模板名称
+    description = db.Column(db.Text)  # 模板描述
+    config = db.Column(db.Text)  # JSON格式的配置
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'config': json.loads(self.config) if self.config else {},
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat()
+        }
+
 class SystemConfig(db.Model):
     """系统配置模型"""
     __tablename__ = 'system_configs'
     
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     key = db.Column(db.String(100), unique=True, nullable=False)
     value = db.Column(db.Text)
     description = db.Column(db.Text)

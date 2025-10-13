@@ -64,8 +64,9 @@ templates/
 ## 安装和配置
 
 ### 1. 环境要求
-- Python 3.8+
-- pip
+- Python 3.8+ (本地部署)
+- Docker 和 Docker Compose (Docker部署，推荐)
+- pip (本地部署)
 
 ### 2. 安装依赖
 ```bash
@@ -88,6 +89,43 @@ python run.py
 ```
 
 应用将在 `http://localhost:5000` 启动。
+
+### 6. Docker 部署（推荐）
+
+#### 使用 Docker 直接部署
+```bash
+# 构建镜像
+docker build -t google-sheet-validator .
+
+# 运行容器
+docker run -p 5000:5000 -v ./data:/app/data -v ./logs:/app/logs google-sheet-validator
+```
+
+#### 使用 Docker Compose 部署（推荐）
+```bash
+# 构建并启动服务
+docker-compose up -d
+
+# 查看服务状态
+docker-compose ps
+
+# 查看日志
+docker-compose logs -f app
+```
+
+应用将在 `http://localhost:5000` 启动。
+
+#### Docker 环境变量配置
+创建 `.env` 文件并配置以下环境变量：
+```bash
+SECRET_KEY=your_secure_random_key_here_at_least_32_characters_long
+DATABASE_URL=sqlite:///data/app.db
+FLASK_ENV=production
+MAX_CONCURRENT_TASKS=5
+TASK_TIMEOUT=3600
+LOG_LEVEL=INFO
+GOOGLE_TOKEN_FILE=data/token.json
+```
 
 ## 使用指南
 

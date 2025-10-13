@@ -3,7 +3,7 @@ import json
 import queue
 from app.services.task_manager import task_manager
 from app.services.config_manager import get_config_manager
-from app.models import Task, TaskLog, db
+from app.models import Task, TaskLog, TaskTemplate, TaskResult, db
 from app.utils.logger import get_logger
 from flask import current_app
 
@@ -321,6 +321,87 @@ def validate_config():
         logger.error(f"验证配置失败: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@api_bp.route('/tasks/<task_id>/system-logs', methods=['GET'])
+def get_task_system_logs(task_id):
+    """获取任务相关的系统日志"""
+    try:
+        import os
+        import re
+        from app.config import Config
+        
+        # 获取查询参数
+        limit = request.args.get('limit', 200, type=int)
+        level_filter = request.args.get('level', '')
+        
+        log_file = Config.LOG_FILE
+        task_logs = []
+        
+        if os.path.exists(log_file):
+            with open(log_file, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+                
+                # 解析日志格式
+                log_pattern = r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) - ([^-]+) - (\w+) - (.+)'
+                
+                # 生成任务相关的搜索模式
+                task_patterns = [
+                    f"[Task-{task_id[:8]}]",  # 任务日志前缀
+                    f"任务 {task_id}",        # 中文任务标识
+                    task_id                    # 完整任务ID
+                ]
+                
+                for line in lines:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    
+                    # 检查是否包含任务相关信息
+                    contains_task_info = any(pattern in line for pattern in task_patterns)
+                    if not contains_task_info:
+                        continue
+                        
+                    match = re.match(log_pattern, line)
+                    if match:
+                        timestamp_str, source, level, message = match.groups()
+                        
+                        # 转换时间格式
+                        try:
+                            from datetime import datetime
+                            timestamp = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S,%f')
+                            iso_timestamp = timestamp.isoformat()
+                        except:
+                            iso_timestamp = timestamp_str
+                        
+                        log_entry = {
+                            'timestamp': iso_timestamp,
+                            'level': level.lower(),
+                            'message': message.strip(),
+                            'source': source.strip(),
+                            'task_id': task_id
+                        }
+                        
+                        # 应用级别过滤器
+                        if level_filter and log_entry['level'] != level_filter.lower():
+                            continue
+                            
+                        task_logs.append(log_entry)
+                
+                # 按时间正序排列
+                task_logs.sort(key=lambda x: x['timestamp'])
+                
+                # 限制结果数量
+                task_logs = task_logs[-limit:]
+        
+        return jsonify({
+            "status": "success", 
+            "logs": task_logs,
+            "task_id": task_id,
+            "total_found": len(task_logs)
+        })
+    except Exception as e:
+        logger.error(f"获取任务系统日志失败: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 @api_bp.route('/logs', methods=['GET'])
 def get_logs():
     """获取系统日志"""
@@ -334,6 +415,7 @@ def get_logs():
         level_filter = request.args.get('level', '')
         search = request.args.get('search', '')
         date_filter = request.args.get('date', '')
+        task_id_filter = request.args.get('task_id', '')  # 新增任务ID过滤
         
         log_file = Config.LOG_FILE
         parsed_logs = []
@@ -378,6 +460,11 @@ def get_logs():
                             continue
                         if date_filter and not iso_timestamp.startswith(date_filter):
                             continue
+                        # 新增任务ID过滤器
+                        if task_id_filter:
+                            task_pattern = f"[Task-{task_id_filter[:8]}]"
+                            if task_pattern not in log_entry['message'] and task_id_filter not in log_entry['message']:
+                                continue
                             
                         parsed_logs.append(log_entry)
                     else:
@@ -399,6 +486,180 @@ def get_logs():
     except Exception as e:
         logger.error(f"获取日志失败: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
+# 模板相关API
+@api_bp.route('/templates', methods=['GET'])
+def get_templates():
+    """获取所有任务模板"""
+    try:
+        templates = TaskTemplate.query.order_by(TaskTemplate.created_at.desc()).all()
+        return jsonify({
+            "status": "success",
+            "templates": [template.to_dict() for template in templates]
+        })
+    except Exception as e:
+        logger.error(f"获取模板列表失败: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@api_bp.route('/templates', methods=['POST'])
+def create_template():
+    """创建新任务模板"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"status": "error", "message": "请求数据为空"}), 400
+        
+        if 'name' not in data:
+            return jsonify({"status": "error", "message": "模板名称不能为空"}), 400
+            
+        if 'config' not in data:
+            return jsonify({"status": "error", "message": "配置信息不能为空"}), 400
+            
+        # 验证配置是否为有效的JSON
+        try:
+            if isinstance(data['config'], str):
+                config_json = json.loads(data['config'])
+                config_str = json.dumps(config_json)
+            else:
+                config_str = json.dumps(data['config'])
+        except json.JSONDecodeError:
+            return jsonify({"status": "error", "message": "配置信息不是有效的JSON格式"}), 400
+        
+        template = TaskTemplate(
+            name=data['name'],
+            description=data.get('description', ''),
+            config=config_str
+        )
+        
+        db.session.add(template)
+        db.session.commit()
+        
+        return jsonify({
+            "status": "success",
+            "message": "模板创建成功",
+            "template": template.to_dict()
+        })
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"创建模板失败: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": f"创建模板失败: {str(e)}"
+        }), 500
+
+@api_bp.route('/templates/<int:template_id>', methods=['GET'])
+def get_template(template_id):
+    """获取模板详情"""
+    try:
+        template = TaskTemplate.query.get(template_id)
+        if not template:
+            return jsonify({"status": "error", "message": "模板不存在"}), 404
+        
+        return jsonify(template.to_dict())
+    except Exception as e:
+        logger.error(f"获取模板详情失败: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@api_bp.route('/templates/<int:template_id>', methods=['PUT'])
+def update_template(template_id):
+    """更新任务模板"""
+    try:
+        template = TaskTemplate.query.get(template_id)
+        if not template:
+            return jsonify({"status": "error", "message": "模板不存在"}), 404
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({"status": "error", "message": "请求数据为空"}), 400
+        
+        template.name = data['name']
+        template.description = data.get('description', template.description)
+        template.config = json.dumps(data['config']) if isinstance(data['config'], (dict, list)) else data['config']
+        
+        db.session.commit()
+        
+        return jsonify({"status": "success", "template": template.to_dict()})
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"更新模板失败: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@api_bp.route('/templates/<int:template_id>', methods=['DELETE'])
+def delete_template(template_id):
+    """删除任务模板"""
+    try:
+        template = TaskTemplate.query.get(template_id)
+        if not template:
+            return jsonify({"status": "error", "message": "模板不存在"}), 404
+        
+        db.session.delete(template)
+        db.session.commit()
+        
+        return jsonify({"status": "success", "message": "模板已删除"})
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"删除模板失败: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+# 任务结果相关API
+@api_bp.route('/results', methods=['GET'])
+def get_results():
+    """获取任务结果列表（支持分页和筛选）"""
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        task_id = request.args.get('task_id', None)
+        
+        query = TaskResult.query
+        
+        if task_id:
+            query = query.filter_by(task_id=task_id)
+        
+        pagination = query.order_by(TaskResult.timestamp.desc()).paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+        
+        results = [result.to_dict() for result in pagination.items]
+        
+        return jsonify({
+            "results": results,
+            "total": pagination.total,
+            "pages": pagination.pages,
+            "current_page": page
+        })
+    except Exception as e:
+        logger.error(f"获取结果列表失败: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@api_bp.route('/results/<int:result_id>', methods=['GET'])
+def get_result(result_id):
+    """获取任务结果详情"""
+    try:
+        result = TaskResult.query.get(result_id)
+        if not result:
+            return jsonify({"status": "error", "message": "结果不存在"}), 404
+        
+        return jsonify(result.to_dict())
+    except Exception as e:
+        logger.error(f"获取结果详情失败: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@api_bp.route('/results/<int:result_id>', methods=['DELETE'])
+def delete_result(result_id):
+    """删除任务结果"""
+    try:
+        result = TaskResult.query.get(result_id)
+        if not result:
+            return jsonify({"status": "error", "message": "结果不存在"}), 404
+        
+        db.session.delete(result)
+        db.session.commit()
+        
+        return jsonify({"status": "success", "message": "结果已删除"})
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"删除结果失败: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 @api_bp.route('/logs/latest', methods=['GET'])
 def get_latest_logs():
     """获取最新的日志（用于实时更新）"""

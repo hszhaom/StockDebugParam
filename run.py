@@ -92,4 +92,4 @@ if __name__ == '__main__':
     check_and_cleanup_dead_tasks()
 
     # 运行应用
-    app.run(debug=False, host='127.0.0.1', port=5000)
+    app.run(debug=True, host='127.0.0.1', port=5000)

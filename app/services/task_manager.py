@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 from app.models import Task, TaskLog, TaskResult, db
 from app.services.google_sheet_service import GoogleSheetService
-from app.utils.logger import get_logger
+from app.utils.logger import get_logger, get_task_logger
 from app.utils.database import transaction_required, safe_delete, safe_update, safe_create
 from app.services.config_manager import get_config_manager
 
@@ -45,37 +45,55 @@ class TaskManager:
             status='pending'
         )
         
+        # 使用任务专用日志记录器
+        task_logger = get_task_logger(task_id, f"{__name__}.create")
+        task_logger.info(f"创建任务成功 - 名称: {name}, 类型: {task_type}, 配置项数量: {len(config) if isinstance(config, dict) else 'N/A'}")
+        
         logger.info(f"创建任务: {task_id} - {name}")
         return task_id
     
     def start_task(self, task_id: str) -> bool:
         """启动任务"""
+        # 创建任务专用日志记录器
+        task_logger = get_task_logger(task_id, f"{__name__}.start")
+        
         # 动态获取最大并发任务数配置，确保实时生效
-        max_concurrent = self._get_config('max_concurrent_tasks', 5)
+        max_concurrent = int(self._get_config('max_concurrent_tasks', 5))
         
         if len(self.running_tasks) >= max_concurrent:
+            error_msg = f"任务队列已满，无法启动任务 (当前运行: {len(self.running_tasks)}, 最大并发数: {max_concurrent})"
+            task_logger.warning(error_msg)
             logger.warning(f"任务队列已满，无法启动任务: {task_id} (最大并发数: {max_concurrent})")
             return False
         
         task = Task.query.get(task_id)
         if not task:
+            error_msg = "任务不存在"
+            task_logger.error(error_msg)
             logger.error(f"任务不存在: {task_id}")
             return False
         
         if task.status != 'pending':
+            error_msg = f"任务状态不是pending，当前状态: {task.status}"
+            task_logger.warning(error_msg)
             logger.warning(f"任务状态不是pending，无法启动: {task_id}")
             return False
         
+        task_logger.info(f"开始启动任务 - 名称: {task.name}, 类型: {task.task_type}")
+        
         # 创建事件队列
         self.task_events[task_id] = queue.Queue()
-        
+        task_logger.info("创建任务事件队列成功")
 
         app = current_app._get_current_object()
         
         # 根据任务类型启动相应的执行器
         if task.task_type == 'google_sheet':
             thread = threading.Thread(target=self._execute_google_sheet_task, args=(task_id, app))
+            task_logger.info("创建Google Sheet任务执行线程")
         else:
+            error_msg = f"不支持的任务类型: {task.task_type}"
+            task_logger.error(error_msg)
             logger.error(f"不支持的任务类型: {task.task_type}")
             return False
         
@@ -83,6 +101,7 @@ class TaskManager:
         self.running_tasks[task_id] = thread
         thread.start()
         
+        task_logger.info("任务执行线程启动成功")
         logger.info(f"启动任务: {task_id}")
         return True
     
@@ -225,8 +244,8 @@ class TaskManager:
                 task.current_step = 0
                 self._add_task_log(task_id, 'info', '重新开始任务，从第 1 步开始')
             
-            # 重置任务状态
-            safe_update(task, commit=False, status='pending', error_message=None, end_time=None)
+            # 重置任务状态 - 清空开始和结束时间，确保重启后时间信息正确
+            safe_update(task, commit=False, status='pending', error_message=None, start_time=None, end_time=None)
             
             # 重新启动任务
             success = self.start_task(task_id)
@@ -347,12 +366,18 @@ class TaskManager:
     
     def _execute_google_sheet_task(self, task_id: str, app):
         """执行Google Sheet任务"""
+        # 创建任务专用日志记录器
+        task_logger = get_task_logger(task_id, f"{__name__}.{task_id}")
+        
         try:
             # 使用传递的应用实例创建应用上下文
             with app.app_context():
                 task = Task.query.get(task_id)
                 if not task:
+                    task_logger.error("任务不存在")
                     return
+                
+                task_logger.info(f"开始执行Google Sheet任务: {task.name}")
                 
                 # 更新任务状态
                 task.status = 'running'
@@ -363,7 +388,9 @@ class TaskManager:
                 
                 # 创建Google Sheet服务
                 config = task.config
-                service = GoogleSheetService(config,task_id, self.task_events.get(task_id), app)
+                service = GoogleSheetService(config, task_id, self.task_events.get(task_id), app)
+                
+                task_logger.info("开始执行任务业务逻辑")
                 
                 # 执行任务
                 success = service.execute_task()
@@ -374,16 +401,20 @@ class TaskManager:
                     # 任务已被取消，保持cancelled状态
                     task.end_time = datetime.now()
                     db.session.commit()
+                    task_logger.info('任务执行完成，状态: cancelled（任务被取消）')
                     self._add_task_log(task_id, 'info', f'任务执行完成，状态: cancelled（任务被取消）', app)
                 else:
                     # 根据执行结果更新状态
-                    task.status = 'completed' if success else 'error'
+                    final_status = 'completed' if success else 'error'
+                    task.status = final_status
                     task.end_time = datetime.now()
                     db.session.commit()
-                    self._add_task_log(task_id, 'info', f'任务执行完成，状态: {task.status}', app)
+                    
+                    task_logger.info(f'任务执行完成，状态: {final_status}')
+                    self._add_task_log(task_id, 'info', f'任务执行完成，状态: {final_status}', app)
             
         except Exception as e:
-            logger.error(f"执行任务失败: {task_id}, 错误: {str(e)}")
+            task_logger.exception(f"执行任务失败: {str(e)}")
             
             # 更新任务状态为错误
             try:
@@ -394,8 +425,8 @@ class TaskManager:
                         task.error_message = str(e)
                         task.end_time = datetime.now()
                         db.session.commit()
-            except:
-                pass
+            except Exception as update_error:
+                task_logger.error(f"更新任务状态失败: {str(update_error)}")
             
             self._add_task_log(task_id, 'error', f'任务执行失败: {str(e)}', app)
         
@@ -403,8 +434,12 @@ class TaskManager:
             # 清理资源
             if task_id in self.running_tasks:
                 del self.running_tasks[task_id]
+                task_logger.info("清理任务线程资源")
             if task_id in self.task_events:
                 del self.task_events[task_id]
+                task_logger.info("清理任务事件队列")
+            
+            task_logger.info("任务执行器退出")
     
     def _add_task_log(self, task_id: str, level: str, message: str, app=None):
         """添加任务日志"""
