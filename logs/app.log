@@ -1070,3 +1070,48 @@ gspread.exceptions.WorksheetNotFound: data1y
 2025-10-13 14:58:45,737 - app.services.google_sheet_service.39f57469-85f7-4a6d-8819-1ab79269cdfa - INFO - [Task-39f57469] 任务已取消，成功执行: 35, 失败: 0
 2025-10-13 14:58:45,745 - app.services.task_manager.39f57469-85f7-4a6d-8819-1ab79269cdfa - INFO - [Task-39f57469] 任务执行完成，状态: error
 2025-10-13 14:58:45,748 - app.services.task_manager.39f57469-85f7-4a6d-8819-1ab79269cdfa - INFO - [Task-39f57469] 任务执行器退出
+2025-10-13 15:50:14,037 - __main__ - INFO - 没有发现运行中的任务
+2025-10-13 15:50:14,681 - __main__ - INFO - 没有发现运行中的任务
+2025-10-13 15:50:42,049 - app.services.config_manager - INFO - 配置缓存已刷新
+2025-10-13 15:50:44,572 - app.services.config_manager - INFO - 配置缓存已刷新
+2025-10-13 15:50:54,107 - app.services.google_sheet_client - ERROR - 打开表格错误。错误内容：Traceback (most recent call last):
+  File "D:\minicoda\envs\py39\lib\site-packages\gspread\spreadsheet.py", line 343, in worksheet
+    item = finditem(
+  File "D:\minicoda\envs\py39\lib\site-packages\gspread\utils.py", line 145, in finditem
+    return next(item for item in seq if func(item))
+StopIteration
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "c:\Users\Administrator\Desktop\谷歌参数批量校验\app\services\google_sheet_client.py", line 41, in __init__
+    self.worksheet = self.sheet.worksheet(sheet_name)
+  File "D:\minicoda\envs\py39\lib\site-packages\gspread\spreadsheet.py", line 349, in worksheet
+    raise WorksheetNotFound(title)
+gspread.exceptions.WorksheetNotFound: data
+
+2025-10-13 15:50:54,108 - app.services.google_sheet_service - ERROR - 获取工作表列表失败: data
+2025-10-13 15:50:54,110 - app.routes.api - ERROR - 获取工作表列表失败: data
+2025-10-13 15:50:54,117 - app.services.google_sheet_client - ERROR - 打开表格错误。错误内容：Traceback (most recent call last):
+  File "D:\minicoda\envs\py39\lib\site-packages\gspread\spreadsheet.py", line 343, in worksheet
+    item = finditem(
+  File "D:\minicoda\envs\py39\lib\site-packages\gspread\utils.py", line 145, in finditem
+    return next(item for item in seq if func(item))
+StopIteration
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "c:\Users\Administrator\Desktop\谷歌参数批量校验\app\services\google_sheet_client.py", line 41, in __init__
+    self.worksheet = self.sheet.worksheet(sheet_name)
+  File "D:\minicoda\envs\py39\lib\site-packages\gspread\spreadsheet.py", line 349, in worksheet
+    raise WorksheetNotFound(title)
+gspread.exceptions.WorksheetNotFound: data
+
+2025-10-13 15:50:54,118 - app.services.google_sheet_service - ERROR - 获取工作表列表失败: data
+2025-10-13 15:50:54,119 - app.routes.api - ERROR - 获取工作表列表失败: data
+2025-10-13 15:51:31,364 - __main__ - INFO - 没有发现运行中的任务
+2025-10-13 15:56:57,089 - __main__ - INFO - 没有发现运行中的任务
+2025-10-13 15:56:57,764 - __main__ - INFO - 没有发现运行中的任务
+2025-10-13 15:57:11,458 - app.services.google_sheet_client - INFO - Google Sheet连接成功: 1bfT0Mpu4sNKQK_p2121IA4DsptwOLhAckgXiKiNkS8I
+2025-10-13 15:57:11,466 - app.services.google_sheet_client - INFO - Google Sheet连接成功: 1bfT0Mpu4sNKQK_p2121IA4DsptwOLhAckgXiKiNkS8I

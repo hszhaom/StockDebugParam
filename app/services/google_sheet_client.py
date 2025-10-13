@@ -13,35 +13,44 @@ logger = get_logger(__name__)
 class GoogleSheet:
     """Google Sheet客户端类"""
     
-    def __init__(self, spreadsheet_id, sheet_name='data', token_file="data/token.json", proxy_url=None):
+    def __init__(self, spreadsheet_id, sheet_name=None, token_file="data/token.json", proxy_url=None):
         """
         初始化Google Sheet连接
         
         Args:
             spreadsheet_id: 电子表格ID
-            sheet_name: 工作表名称，默认为'data'
+            sheet_name: 工作表名称，如果不提供则不会选择具体工作表
             token_file: 认证文件路径
             proxy_url: 代理URL
         """
         SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
+        self.client = None
+        self.sheet = None
+        self.worksheet = None
 
         try:
             # 加载凭证
             creds = Credentials.from_authorized_user_file(token_file, scopes=SCOPES)
 
-            client = gspread.authorize(credentials=creds)
+            self.client = gspread.authorize(credentials=creds)
             if proxy_url:
                 logger.info(f"使用代理：{proxy_url}")
                 # 设置代理环境变量
                 os.environ['HTTP_PROXY'] = proxy_url
                 os.environ['HTTPS_PROXY'] = proxy_url
 
-            # 打开电子表格和工作表
-            self.sheet = client.open_by_key(spreadsheet_id)
-            self.worksheet = self.sheet.worksheet(sheet_name)
-            logger.info(f"Google Sheet连接成功: {spreadsheet_id}/{sheet_name}")
+            # 打开电子表格
+            self.sheet = self.client.open_by_key(spreadsheet_id)
+            
+            # 如果提供了工作表名称，则选择具体工作表
+            if sheet_name:
+                self.worksheet = self.sheet.worksheet(sheet_name)
+                logger.info(f"Google Sheet连接成功: {spreadsheet_id}/{sheet_name}")
+            else:
+                logger.info(f"Google Sheet连接成功: {spreadsheet_id}")
             
         except Exception as e:
+            self.close()  # 确保在出错时关闭连接
             logger.error(f'打开表格错误。错误内容：{traceback.format_exc()}')
             raise e
 
@@ -265,3 +274,41 @@ class GoogleSheet:
                 time.sleep(delay)
         logger.warning(f'多次尝试后，仍无法获取有效的交易数量，返回0')
         return '0'
+        
+    def get_all_worksheets(self):
+        """获取电子表格中的所有工作表名称"""
+        try:
+            if not self.sheet:
+                raise ValueError("未初始化Google Sheet连接")
+            worksheets = self.sheet.worksheets()
+            return [ws.title for ws in worksheets]
+        except Exception as e:
+            logger.error(f'获取工作表列表失败: {str(e)}')
+            raise
+        
+    def close(self):
+        """关闭连接并清理资源"""
+        try:
+            # 清理代理设置
+            if 'HTTP_PROXY' in os.environ:
+                del os.environ['HTTP_PROXY']
+            if 'HTTPS_PROXY' in os.environ:
+                del os.environ['HTTPS_PROXY']
+            
+            # 清理对象引用
+            self.worksheet = None
+            self.sheet = None
+            if self.client:
+                self.client.session.close()  # 关闭gspread的session
+            self.client = None
+            
+        except Exception as e:
+            logger.warning(f"关闭Google Sheet连接时出错: {str(e)}")
+            
+    def __enter__(self):
+        """上下文管理器入口"""
+        return self
+        
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """上下文管理器出口"""
+        self.close()

@@ -486,6 +486,33 @@ def get_logs():
     except Exception as e:
         logger.error(f"获取日志失败: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
+# Google Sheet相关API
+@api_bp.route('/google-sheet/worksheets', methods=['POST'])
+def get_worksheets():
+    """获取Google Sheet中的所有工作表名称"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"status": "error", "message": "请求数据为空"}), 400
+            
+        spreadsheet_id = data.get('spreadsheet_id')
+        token_file = data.get('token_file', 'data/token.json')
+        proxy_url = data.get('proxy_url')
+        
+        if not spreadsheet_id:
+            return jsonify({"status": "error", "message": "缺少spreadsheet_id参数"}), 400
+            
+        from app.services.google_sheet_service import GoogleSheetService
+        worksheets = GoogleSheetService.get_worksheets(spreadsheet_id, token_file, proxy_url)
+        
+        return jsonify({
+            "status": "success",
+            "worksheets": worksheets
+        })
+    except Exception as e:
+        logger.error(f"获取工作表列表失败: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 # 模板相关API
 @api_bp.route('/templates', methods=['GET'])
 def get_templates():
