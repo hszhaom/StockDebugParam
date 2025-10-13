@@ -19,35 +19,133 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# celery beat schedule file
+celerybeat-schedule
+
+# SageMath parsed files
+*.sage.py
 
 # Virtual Environment
-venv/
+.env
+.venv
 env/
+venv/
 ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
 
 # IDE
-.idea/
 .vscode/
+.idea/
 *.swp
 *.swo
+*~
 
-# Logs
-logs/
-*.log
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
-# Database
+# Project specific - Sensitive files
+data/token*.json
+data/temp_token_*.json
+data/tasks.json
+logs/*.log
 *.db
+*.sqlite
 *.sqlite3
-instance/
 
-# Sensitive Data
-data/token.json
-*.pem
-*.key
-.env
+# API keys and secrets
+**/credentials.json
+**/client_secret*.json
+**/*_secret*
+**/*_key*
+**/config_secret*
+
+# Config files with sensitive data
+config/config.json
+.env.local
+.env.production
 .env.*
 !.env.example
 
-# Other
-.DS_Store
-Thumbs.db
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Temporary files
+*.tmp
+*.temp
+
+# Docker
+docker-compose.override.yml
