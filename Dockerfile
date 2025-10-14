@@ -1,5 +1,7 @@
 # 使用官方Python运行时作为基础镜像
-FROM hub.c.163.com/library/python:3.9-slim
+# 如果网络有问题，可以尝试使用阿里云镜像
+# FROM registry.cn-hangzhou.aliyuncs.com/library/python:3.9-slim
+FROM python:3.9-slim
 
 # 设置工作目录
 WORKDIR /app

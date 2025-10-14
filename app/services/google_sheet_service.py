@@ -9,11 +9,13 @@ from sqlalchemy import text
 from flask import current_app
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_result
 
+from app.exceptions.checkForErrors import checkForErrors
 from app.models import Task, TaskLog, TaskResult, db
 from app.services.google_sheet_client import GoogleSheet
 from app.services.config_manager import get_config_manager
 from app.utils.db_stock_api import StockAPIClient
-from app.utils.logger import get_logger, get_task_logger
+from app.utils.logger import get_logger
+
 logger = get_logger(__name__)
 
 
@@ -263,6 +265,9 @@ class GoogleSheetService:
                     # # 推送结果，到生产数据库
                     self.send_stock_template_param_data(param_load, lambda level, msg: self._log(level, msg))
 
+                except checkForErrors as e:
+                    self._log_error(str(e))
+                    return success_count, failed_count, 'error'
                 except Exception as e:
                     failed_count += 1
                     # 检查是否是任务被取消
@@ -437,7 +442,6 @@ class GoogleSheetService:
             # 定时检查是否完成（最多检查60次，20-30秒）
             for attempt in range(60):
                 self._log_info(f"第 {attempt + 1} 次检查执行状态...")
-                time.sleep(random.randint(10,20))
                 # 检查所有位置是否都有产出
                 all_completed = True
                 if self.google_sheet and check_positions:
@@ -469,8 +473,13 @@ class GoogleSheetService:
                                 value = result_values.get(position, "获取失败")
                                 if '%' in value:
                                     value = float(value.replace('%', '')) / 100
-
+                                if str(value).startswith(("#", "#N/A")):
+                                    error_msg = f"获取结果位置 {position} 时出错: {str(value)}"
+                                    raise checkForErrors(f"检查报错，出现#|#N/A 这种异常错误，联系用户检查 {error_msg}")
                                 results[position] = value
+
+                        except checkForErrors as e:
+                            raise e
                         except Exception as e:
                             error_msg = f"批量获取结果时出错: {str(e)}"
                             self._log_error(error_msg)
@@ -490,9 +499,9 @@ class GoogleSheetService:
 
                 # 从配置获取执行延迟时间
                 config_manager = get_config_manager()
-                delay_min = config_manager.get_config('execution_delay_min', 20)
-                delay_max = config_manager.get_config('execution_delay_max', 30)
-                time.sleep(random.randint(delay_min, delay_max))  
+                delay_min = int(config_manager.get_config('execution_delay_min', 20))
+                delay_max = int(config_manager.get_config('execution_delay_max', 30))
+                time.sleep(random.randint(delay_min, delay_max))
 
             self._log_warning("执行超时，未在规定时间内完成")
             return False, {}
