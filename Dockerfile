@@ -1,5 +1,6 @@
 # 使用官方Python运行时作为基础镜像
-FROM python:3.9-slim
+FROM python:3.9-slim-bullseye
+# FROM python:3.9.24-slim
 
 # 设置工作目录
 WORKDIR /app
@@ -36,4 +37,4 @@ RUN adduser --disabled-password --gecos '' appuser && \
 USER appuser
 
 # 使用Gunicorn启动应用
-CMD ["gunicorn", "-c", "config/gunicorn.conf.py", "run:app"]
+CMD ["/usr/local/bin/gunicorn", "-c", "config/gunicorn.conf.py", "run:app"]

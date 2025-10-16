@@ -1,9 +1,12 @@
 Flask
 Flask-SQLAlchemy
 Flask-Migrate
+Flask-RESTX
 gspread
 google-auth
 google-auth-oauthlib
 google-auth-httplib2
 requests
 tenacity
+gunicorn
+psycopg2-binary

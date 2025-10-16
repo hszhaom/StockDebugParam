@@ -12,15 +12,30 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///app.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
-    # SQLite 特定配置 - 提高并发性能
-    SQLALCHEMY_ENGINE_OPTIONS = {
-        'pool_pre_ping': True,
-        'pool_recycle': 300,
-        'connect_args': {
-            'timeout': 30,  # 连接超时时间（秒）
-            'check_same_thread': False,  # 允许多线程访问
-        }
-    }
+    # 数据库引擎配置 - 根据数据库类型动态配置
+    def _get_engine_options():
+        database_url = os.environ.get('DATABASE_URL', 'sqlite:///app.db')
+        if database_url.startswith('sqlite'):
+            # SQLite 特定配置
+            return {
+                'pool_pre_ping': True,
+                'pool_recycle': 300,
+                'connect_args': {
+                    'timeout': 30,  # 连接超时时间（秒）
+                    'check_same_thread': False,  # 允许多线程访问
+                }
+            }
+        else:
+            # PostgreSQL 和其他数据库配置
+            return {
+                'pool_pre_ping': True,
+                'pool_recycle': 300,
+                'connect_args': {
+                    'connect_timeout': 30,  # PostgreSQL 使用 connect_timeout
+                }
+            }
+    
+    SQLALCHEMY_ENGINE_OPTIONS = _get_engine_options()
     
     # 文件路径配置
     BASE_DIR = Path(__file__).parent.parent

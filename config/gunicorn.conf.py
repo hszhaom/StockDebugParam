@@ -28,7 +28,7 @@ preload_app = True
 # 日志配置
 accesslog = "logs/gunicorn_access.log"
 errorlog = "logs/gunicorn_error.log"
-loglevel = "info"
+loglevel = "DEBUG"
 
 # 进程名
 proc_name = "google-sheet-validator"
