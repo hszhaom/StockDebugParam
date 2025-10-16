@@ -245,7 +245,7 @@ class TaskManager:
                 self._add_task_log(task_id, 'info', '重新开始任务，从第 1 步开始')
             
             # 重置任务状态 - 清空开始和结束时间，确保重启后时间信息正确
-            safe_update(task, commit=False, status='pending', error_message=None, start_time=None, end_time=None)
+            safe_update(task, commit=True, status='pending', error_message=None, start_time=None, end_time=None)
             
             # 重新启动任务
             success = self.start_task(task_id)

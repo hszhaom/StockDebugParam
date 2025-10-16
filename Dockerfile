@@ -1,6 +1,4 @@
 # 使用官方Python运行时作为基础镜像
-# 如果网络有问题，可以尝试使用阿里云镜像
-# FROM registry.cn-hangzhou.aliyuncs.com/library/python:3.9-slim
 FROM python:3.9-slim
 
 # 设置工作目录
@@ -37,5 +35,5 @@ RUN adduser --disabled-password --gecos '' appuser && \
     chown -R appuser:appuser /app
 USER appuser
 
-# 启动应用
-CMD ["python", "run.py"]
+# 使用Gunicorn启动应用
+CMD ["gunicorn", "-c", "config/gunicorn.conf.py", "run:app"]

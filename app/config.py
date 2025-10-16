@@ -12,6 +12,16 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///app.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
+    # SQLite 特定配置 - 提高并发性能
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_pre_ping': True,
+        'pool_recycle': 300,
+        'connect_args': {
+            'timeout': 30,  # 连接超时时间（秒）
+            'check_same_thread': False,  # 允许多线程访问
+        }
+    }
+    
     # 文件路径配置
     BASE_DIR = Path(__file__).parent.parent
     DATA_DIR = BASE_DIR / 'data'

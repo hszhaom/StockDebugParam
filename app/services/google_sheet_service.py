@@ -15,6 +15,7 @@ from app.services.google_sheet_client import GoogleSheet
 from app.services.config_manager import get_config_manager
 from app.utils.db_stock_api import StockAPIClient
 from app.utils.logger import get_logger
+from app.utils.db_retry import safe_db_operation, db_retry_manager
 
 logger = get_logger(__name__)
 
@@ -93,7 +94,7 @@ class GoogleSheetService:
                     if task_status == 'cancelled':
                         # 任务被取消，更新数据库状态
                         task.status = 'cancelled'
-                        db.session.commit()
+                        db_retry_manager.commit_with_retry(db.session)
                         self._log_info(f'任务已取消，成功执行: {success_count}, 失败: {failed_count}')
                         return False
                     elif task_status == 'error':
@@ -131,7 +132,7 @@ class GoogleSheetService:
                     if task_status == 'cancelled':
                         # 任务被取消，更新数据库状态
                         task.status = 'cancelled'
-                        db.session.commit()
+                        db_retry_manager.commit_with_retry(db.session)
                         self._log_info(f'任务已取消，成功执行: {success_count}, 失败: {failed_count}')
                         return False
                     elif task_status == 'error':
@@ -181,7 +182,7 @@ class GoogleSheetService:
 
             # 更新任务总步数
             task.total_steps = total_combinations
-            db.session.commit()
+            db_retry_manager.commit_with_retry(db.session)
 
             # 推送参数组合信息
             self._log_info(f'将执行 {total_combinations} 个参数组合')
@@ -207,10 +208,13 @@ class GoogleSheetService:
                 
                 # 原子性检查任务是否被取消
                 # SQLite不支持FOR UPDATE，使用简单查询
-                result = db.session.execute(
-                    text("SELECT status FROM tasks WHERE id = :task_id"),
-                    {"task_id": self.task_id}
-                ).fetchone()
+                def check_task_status():
+                    return db.session.execute(
+                        text("SELECT status FROM tasks WHERE id = :task_id"),
+                        {"task_id": self.task_id}
+                    ).fetchone()
+                
+                result = safe_db_operation(check_task_status)
                 
                 if not result or result.status == 'cancelled':
                     self._log_warning("任务已被取消，停止执行")
@@ -222,7 +226,7 @@ class GoogleSheetService:
 
                 # 更新当前步数
                 task.current_step = i + 1
-                db.session.commit()
+                db_retry_manager.commit_with_retry(db.session)
 
                 # 执行单个参数组合
                 try:
@@ -569,26 +573,23 @@ class GoogleSheetService:
             return message
     
     def _save_to_database(self, level: str, message: str):
-        """保存日志到数据库"""
+        """保存日志到数据库，包含重试逻辑"""
+        def save_log_operation():
+            log = TaskLog(
+                task_id=self.task_id,
+                level=level,
+                message=message
+            )
+            db.session.add(log)
+            db.session.commit()
+        
         try:
             if self.app:
                 with self.app.app_context():
-                    log = TaskLog(
-                        task_id=self.task_id,
-                        level=level,
-                        message=message
-                    )
-                    db.session.add(log)
-                    db.session.commit()
+                    safe_db_operation(save_log_operation)
             else:
                 with current_app.app_context():
-                    log = TaskLog(
-                        task_id=self.task_id,
-                        level=level,
-                        message=message
-                    )
-                    db.session.add(log)
-                    db.session.commit()
+                    safe_db_operation(save_log_operation)
         except Exception as e:
             # 数据库保存失败时静默处理，不影响主流程
             pass
@@ -639,33 +640,28 @@ class GoogleSheetService:
         self._log('error', '', 'api_error', action=action, error=error)
 
     def _save_task_result(self, step_index: int, parameters: List, result: Dict, success: bool):
-        """保存任务结果到数据库"""
+        """保存任务结果到数据库，包含重试逻辑"""
+        def save_result_operation():
+            task_result = TaskResult(
+                task_id=self.task_id,
+                step_index=step_index,
+                parameters=json.dumps(parameters),
+                result=json.dumps(result),
+                success=success
+            )
+            db.session.add(task_result)
+            db.session.commit()
+        
         try:
             if self.app:
                 # 在后台线程中使用传递的应用实例
                 with self.app.app_context():
-                    task_result = TaskResult(
-                        task_id=self.task_id,
-                        step_index=step_index,
-                        parameters=json.dumps(parameters),
-                        result=json.dumps(result),
-                        success=success
-                    )
-                    db.session.add(task_result)
-                    db.session.commit()
+                    safe_db_operation(save_result_operation)
             else:
                 # 在主线程中使用当前应用上下文
                 from flask import current_app
                 with current_app.app_context():
-                    task_result = TaskResult(
-                        task_id=self.task_id,
-                        step_index=step_index,
-                        parameters=json.dumps(parameters),
-                        result=json.dumps(result),
-                        success=success
-                    )
-                    db.session.add(task_result)
-                    db.session.commit()
+                    safe_db_operation(save_result_operation)
         except Exception as e:
             error_msg = f"保存任务结果失败: {str(e)}"
             self._log_error(error_msg)

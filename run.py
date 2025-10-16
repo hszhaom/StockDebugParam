@@ -8,6 +8,7 @@ from app import create_app
 from app.extensions import db
 from app.models import Task, TaskLog, TaskResult, SystemConfig
 from app.config import init_config as init_config2
+from app.utils.logger import initialize_logging
 app = create_app()
 
 @app.shell_context_processor
@@ -37,7 +38,7 @@ def check_and_cleanup_dead_tasks():
     from app.services.task_manager import task_manager
     from app.utils.logger import get_logger
     
-    logger = get_logger(__name__)
+    logger = get_logger('startup')
     
     with app.app_context():
         try:
@@ -83,7 +84,10 @@ if __name__ == '__main__':
     os.makedirs('data', exist_ok=True)
     os.makedirs('logs', exist_ok=True)
 
-    # 初始化数据库ss
+    # 初始化日志系统（在应用上下文之前）
+    initialize_logging()
+
+    # 初始化数据库
     with app.app_context():
         db.create_all()
         init_config2()
@@ -92,4 +96,5 @@ if __name__ == '__main__':
     check_and_cleanup_dead_tasks()
 
     # 运行应用
-    app.run(debug=True, host='127.0.0.1', port=5000)
+    debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() in ('true', '1', 'yes', 'on')
+    app.run(debug=debug_mode, host='127.0.0.1', port=5000)
