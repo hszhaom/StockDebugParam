@@ -2,6 +2,8 @@ from flask import Flask
 from app.config import Config
 from app.extensions import db, migrate
 from app.routes import register_blueprints
+from flask_restx import Api
+from app.routes.api_restx import api_ns, config_ns, template_ns, result_ns, logs_ns, gsheet_ns
 
 def create_app():
     # 获取应用根目录
@@ -22,8 +24,18 @@ def create_app():
     # 初始化扩展
     db.init_app(app)
     migrate.init_app(app, db)
-    
-    # 注册蓝图
+
+    # 注册API文档
+    api = Api(app, version='1.0', title='Google Sheet Task API',
+              description='自动生成Swagger接口文档 - 访问 /swagger',
+              doc='/swagger')
+    api.add_namespace(api_ns, path='/api')
+    api.add_namespace(config_ns, path='/api')
+    api.add_namespace(template_ns, path='/api')
+    api.add_namespace(result_ns, path='/api')
+    api.add_namespace(logs_ns, path='/api')
+    api.add_namespace(gsheet_ns, path='/api')
+    # 保留原有蓝图注册
     register_blueprints(app)
     
     return app
