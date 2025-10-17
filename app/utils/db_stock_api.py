@@ -51,43 +51,29 @@ class StockAPIClient:
         """
         url = f"{self.base_url}/{endpoint.lstrip('/')}"
 
-        try:
-            logger.debug(f"发送 {method} 请求到 {url}")
+        logger.debug(f"发送 {method} 请求到 {url}")
 
-            if method.upper() == 'GET':
-                response = self.session.get(url, params=params, timeout=self.timeout)
-            elif method.upper() == 'POST':
-                response = self.session.post(url, json=data, params=params, timeout=self.timeout)
-            elif method.upper() == 'PUT':
-                response = self.session.put(url, json=data, params=params, timeout=self.timeout)
-            elif method.upper() == 'DELETE':
-                response = self.session.delete(url, params=params, timeout=self.timeout)
-            else:
-                raise ValueError(f"不支持的HTTP方法: {method}")
+        if method.upper() == 'GET':
+            response = self.session.get(url, params=params, timeout=self.timeout)
+        elif method.upper() == 'POST':
+            response = self.session.post(url, json=data, params=params, timeout=self.timeout)
+        elif method.upper() == 'PUT':
+            response = self.session.put(url, json=data, params=params, timeout=self.timeout)
+        elif method.upper() == 'DELETE':
+            response = self.session.delete(url, params=params, timeout=self.timeout)
+        else:
+            raise ValueError(f"不支持的HTTP方法: {method}")
 
-            # 检查响应状态
-            if response.status_code == 200:
-                try:
-                    return response.json()
-                except json.JSONDecodeError:
-                    logger.warning(f"响应不是有效的JSON格式: {response.text}")
-                    return {"raw_response": response.text}
-            else:
-                logger.error(f"请求失败，状态码：{response.status_code}，错误信息：{response.text}")
-                return None
+        response.raise_for_status()
 
-        except requests.exceptions.Timeout:
-            logger.error(f"请求超时: {url}")
-            return None
-        except requests.exceptions.ConnectionError:
-            logger.error(f"连接错误: {url}")
-            return None
-        except requests.exceptions.RequestException as e:
-            logger.error(f"请求异常: {e}")
-            return None
-        except Exception as e:
-            logger.error(f"未知错误: {e}")
-            return None
+        # 检查响应状态
+        if response.status_code == 200:
+            try:
+                return response.json()
+            except json.JSONDecodeError:
+                logger.warning(f"响应不是有效的JSON格式: {response.text}")
+                return {"raw_response": response.text}
+        raise requests.HTTPError(f"请求失败，状态码: {response.status_code}, 响应: {response.text}")
 
     def get_single_stock_template_param(self, stock_no: str) -> Optional[Dict]:
         """

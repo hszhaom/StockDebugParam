@@ -12,6 +12,11 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///app.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
+    dd_access_token='a0fe95aac4a01a4c6826caf95087698baa6473804ee81dc2afaf4458e770eccc'
+    dd_secret='SEC3309a1318e963385c7a805d2530cb7d6f2128fe4c9f26673cbad7f599927a498'
+
+    BASE_URL = os.environ.get('BASE_URL', 'http://localhost:5000')
+
     # 数据库引擎配置 - 根据数据库类型动态配置
     def _get_engine_options():
         database_url = os.environ.get('DATABASE_URL', 'sqlite:///app.db')

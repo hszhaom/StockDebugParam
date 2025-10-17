@@ -4,6 +4,7 @@ from app.extensions import db, migrate
 from app.routes import register_blueprints
 from flask_restx import Api
 from app.routes.api_restx import api_ns, config_ns, template_ns, result_ns, logs_ns, gsheet_ns
+from app.utils.ding_talk_notifier import DingTalkNotifier
 
 def create_app():
     # 获取应用根目录
@@ -38,4 +39,11 @@ def create_app():
     # 保留原有蓝图注册
     register_blueprints(app)
     
+    notifier = DingTalkNotifier(
+        access_token=Config.dd_access_token,
+        secret=Config.dd_secret
+    )
+
+    app.notifier = notifier
+
     return app
