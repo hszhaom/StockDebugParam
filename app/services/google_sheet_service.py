@@ -4,18 +4,18 @@ import time
 import traceback
 from datetime import datetime
 from typing import Dict, Any, List, Optional
-from sqlalchemy import text
 
 from flask import current_app
+from sqlalchemy import text
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_result
 
 from app.exceptions.checkForErrors import checkForErrors
 from app.models import Task, TaskLog, TaskResult, db
-from app.services.google_sheet_client import GoogleSheet
 from app.services.config_manager import get_config_manager
+from app.services.google_sheet_client import GoogleSheet
+from app.utils.db_retry import safe_db_operation, db_retry_manager
 from app.utils.db_stock_api import StockAPIClient
 from app.utils.logger import get_logger
-from app.utils.db_retry import safe_db_operation, db_retry_manager
 
 logger = get_logger(__name__)
 
@@ -236,7 +236,7 @@ class GoogleSheetService:
 
                 # 执行单个参数组合
                 try:
-                    success, result = self._execute_parameter_combination(i, combination, config_data)
+                    success, result = self._execute_parameter_combination(combination, config_data)
 
                     if success:
                         success_count += 1
@@ -423,7 +423,7 @@ class GoogleSheetService:
         reraise=True,  # 重试耗尽后重新抛出原始异常
         retry=retry_if_result(lambda result: (False in result or result is Exception) and all(result[-1].values()))
     )
-    def _execute_parameter_combination(self, index: int, combination: List, config_data: Dict[str, Any]) -> tuple:
+    def _execute_parameter_combination(self,combination: List, config_data: Dict[str, Any]) -> tuple:
         """执行单个参数组合"""
         try:
             # 获取参数位置配置
@@ -447,10 +447,23 @@ class GoogleSheetService:
                     return None
                 # 随机选择一个键
                 random_key = random.choice(list(cell_updates.keys()))
-
+                self._log_info(f"防止模型卡顿，在随机位置写入：{random_key},当前是第{num + 1}轮检查")
                 # 使用选中的键和对应的值更新单元格
                 self.google_sheet.update_cell(random_key, cell_updates[random_key])
                 return None
+
+            def check_result(_position,_value = None):
+                if not _value:
+                    self._log_info(f"结果位置 {_position} 值为空，跳过,重新检查")
+                    raise Exception(f"结果位置 {_position} 值为空，跳过,重新检查")
+                if '%' in _value:
+                    _value = float(_value.replace('%', '').replace(',', '')) / 100
+
+                if str(_value).startswith(("#", "#N/A")):
+                    _error_msg = f"获取结果位置 {_position} 时出错: {str(_value)}"
+                    raise checkForErrors(f"检查报错，出现#|#N/A 这种异常错误，联系用户检查 {_error_msg}")
+
+                results[_position] = round(_value, 5)
 
             _update_cell()
 
@@ -496,17 +509,7 @@ class GoogleSheetService:
                             self._log_info(f"获取到参数执行结果，检查是否正确：{result_values}")
                             for position in result_positions:
                                 value = result_values.get(position, "")
-                                if not value:
-                                    self._log_info(f"结果位置 {position} 值为空，跳过,重新检查")
-                                    raise Exception(f"结果位置 {position} 值为空，跳过,重新检查")
-                                if '%' in value:
-                                    value = float(value.replace('%', '').replace(',','')) / 100
-
-                                if str(value).startswith(("#", "#N/A")):
-                                    error_msg = f"获取结果位置 {position} 时出错: {str(value)}"
-                                    raise checkForErrors(f"检查报错，出现#|#N/A 这种异常错误，联系用户检查 {error_msg}")
-
-                                results[position] = round(value,5)
+                                check_result(position,value)
 
                         except checkForErrors as e:
                             raise e
@@ -517,7 +520,7 @@ class GoogleSheetService:
                             for position in result_positions:
                                 try:
                                     value = self.google_sheet.get_cell(position)
-                                    results[position] = value
+                                    check_result(position, value)
                                 except Exception as cell_error:
                                     error_msg = f"获取结果位置 {position} 时出错: {str(cell_error)}"
                                     self._log_error(error_msg)
