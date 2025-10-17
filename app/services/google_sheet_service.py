@@ -385,6 +385,9 @@ class GoogleSheetService:
                 self._log_info(f"使用代理: {proxy_url}")
 
             self.google_sheet = GoogleSheet(spreadsheet_id, sheet_name, token_file, proxy_url)
+            if not self.google_sheet.worksheet:
+                raise Exception("请先选择工作表")
+
             self._log_info("Google Sheet连接初始化成功")
         except Exception as e:
             error_msg = f"初始化Google Sheet连接失败: {str(e)}"
