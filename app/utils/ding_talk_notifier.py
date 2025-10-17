@@ -1,3 +1,4 @@
+from datetime import datetime
 import requests
 import time
 import hmac
@@ -93,24 +94,55 @@ class DingTalkNotifier:
         return timestamp, sign
 
     def error_google_task_templates(self,task_id,error_msg,url):
+        return {
+            "msgtype": "actionCard", 
+            "actionCard": {
+                "title": "🚨 告警：任务执行异常",
+                "text": f"""## 🚨 任务执行告警
+                        
+        **任务ID**: {task_id}  
+        **告警时间**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}  
+        **异常信息**: {error_msg}
+                        
+        > 请及时处理！""",
+                "btnOrientation": "0", 
+                "btns": [
+                    {
+                        "title": "🔍 查看报错详情",
+                        "actionURL": url
+                    }
+                ]
+            },
+            "at": {
+                "isAtAll": False,
+            }
+        }
+
+    def google_task_ok_templates(self,task_id,msg,url):
         
         return {
             "msgtype": "actionCard", 
             "actionCard": {
-                "title": "告警：当前任务报错",
-                "text": f"#### 告警：当前任务报错 \n 报错id:{task_id} 报错异常：{error_msg}",
-                "btnOrientation": "0", 
+                "title": "🎉 任务完成通知",
+                "text": f"""## 任务执行完成
+                        
+        **任务ID**: {task_id}  
+        **完成时间**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}  
+        **执行结果**: {msg}
+                        
+        ---""",
+                "btnOrientation": "0",
                 "btns": [
-                {
-                    "title": "跳转报错任务",
-                    "actionURL": url
-                }
+                    {
+                        "title": "📎 查看详情",
+                        "actionURL": url
+                    }
                 ]
             },
             "at": {
-                "isAtAll": False, # 是否@所有人
+                "isAtAll": False,
             }
-            }
+        }
 
 
     def send_message(self,data):

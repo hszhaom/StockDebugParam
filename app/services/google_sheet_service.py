@@ -34,9 +34,21 @@ class GoogleSheetService:
         # 创建任务专用日志记录器 - 不使用TaskLogger的前缀功能，我们自己控制格式
         self.task_logger = get_logger(f"{__name__}.{task_id}")
 
-    def error_dd(self,error):
-        error_msg = self.app.notifier.error_google_task_templates(self.task_id,error,f"{current_app.config.get('BASE_URL')}/google-sheet/detail?task_id={self.task_id}")
+    def error_dd(self,error_msg):
+        error_msg = self.app.notifier.error_google_task_templates(
+            f"{self.task_id} -- {self.task.name}",
+            error_msg,
+            f"{current_app.config.get('BASE_URL')}/google-sheet/detail?task_id={self.task_id}")
         self.app.notifier.send_message(error_msg)
+
+    def task_ok_to_dd(self,result):
+        error_msg = self.app.notifier.google_task_ok_templates(
+            f"{self.task_id} -- {self.task.name}",
+            result,
+            f"{current_app.config.get('BASE_URL')}/google-sheet/detail?task_id={self.task_id}"
+                                                               )
+        self.app.notifier.send_message(error_msg)
+
 
     def execute_task(self):
         """执行Google Sheet任务"""
@@ -46,6 +58,7 @@ class GoogleSheetService:
             context_app = self.app or current_app
             with context_app.app_context():
                 task = Task.query.get(self.task_id)
+                self.task = task
                 if not task:
                     self._log_error(f'任务 {self.task_id} 不存在')
                     return False
@@ -85,6 +98,8 @@ class GoogleSheetService:
                 # zhishu_value = 0.88
                 # smoothing_value = 0.08
                 # bordering_value = 0.38
+                
+
 
                 stock_param = self.get_single_stock_template_param(name)
 
@@ -133,20 +148,14 @@ class GoogleSheetService:
                     self.error_dd(task.error)
                     return False
                 else:
-                    # 任务正常完成
-                    self._log_info(f'任务执行完成，成功: {success_count}, 失败: {failed_count}')
-                    
                     if stock_param is not None and stock_param != "error":
                         return success_count > 0
-                    
-                    # 任务正常完成
-                    self._log_info(f'任务执行完成，成功: {success_count}, 失败: {failed_count}')
-                    # 继续执行后续逻辑
 
                 if success_count == 0 and failed_count == 0:
                     self._log_error('任务执行失败')
                     return False
-
+                
+                self.task_ok_to_dd(f'成功执行: {success_count}, 失败: {failed_count}')
                 # 推送任务完成信息
                 completion_msg = f'任务执行完成！成功: {success_count}, 失败: {failed_count}'
                 self._log_info(completion_msg)
@@ -166,6 +175,7 @@ class GoogleSheetService:
             # 其他异常情况
             error_msg = f"执行Google Sheet任务失败: {self.task_id}, 错误: {str(e)}"
             self._log_error(error_msg)
+            self.error_dd(error_msg)
             return False
 
     def get_bdl(self, task, name, parameters, config_data, index_z=0):
