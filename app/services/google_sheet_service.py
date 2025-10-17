@@ -292,9 +292,10 @@ class GoogleSheetService:
                             break  # 退出循环
                     except:
                         pass
-                    
+
                     error_msg = f'第 {i + 1} 个参数组合执行出错: {str(e)}'
                     self._log_error(error_msg)
+                    return success_count, failed_count, 'error'
 
                 self._log_info(f"第 {i + 1} 个参数组合执行完成，成功: {success_count}, 失败: {failed_count}")
 
@@ -459,12 +460,15 @@ class GoogleSheetService:
                 if not _value:
                     self._log_info(f"结果位置 {_position} 值为空，跳过,重新检查")
                     raise Exception(f"结果位置 {_position} 值为空，跳过,重新检查")
-                if '%' in _value:
-                    _value = float(_value.replace('%', '').replace(',', '')) / 100
 
-                if str(_value).startswith(("#", "#N/A")):
+                if str(_value).strip().startswith(("#", "#N/A")):
                     _error_msg = f"获取结果位置 {_position} 时出错: {str(_value)}"
                     raise checkForErrors(f"检查报错，出现#|#N/A 这种异常错误，联系用户检查 {_error_msg}")
+
+                if '%' in _value:
+                    _value = float(_value.replace('%', '').replace(',', '')) / 100
+                if isinstance(_value, str):
+                    _value = float(_value.replace(',', ''))
 
                 results[_position] = round(_value, 5)
 
