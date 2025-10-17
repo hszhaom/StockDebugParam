@@ -25,7 +25,7 @@ class GoogleSheetService:
 
     def __init__(self, config: Dict[str, Any], task_id: str, event_queue=None, app=None):
         self.config = config
-        self.google_sheet = None
+        self.google_sheet:Optional[GoogleSheet] = None
         self.api_client = StockAPIClient()
         # 保存参数到实例变量
         self.task_id = task_id
@@ -244,7 +244,7 @@ class GoogleSheetService:
                     else:
                         self._log_warning(f'第 {i + 1} 个参数组合执行失败')
                         failed_count += 1
-                        continue
+                        return success_count, failed_count, 'error'
 
                     param_load = {
                         "stock_no": name,
@@ -270,7 +270,8 @@ class GoogleSheetService:
                         "fee_annualized": result['I22'],
                         "year_rate": result['I23']
                     }
-                    self._log_info(f"准备发送参数数据: {param_load}")
+
+
                     # 保存结果到数据库
                     self._save_task_result(i, combination, result, success)
                     # # 推送结果，到生产数据库
@@ -333,7 +334,6 @@ class GoogleSheetService:
             self._log_api("发送股票模板参数数据", f"payload: {payload}")
             result = self.api_client.insert_stock_template_param(payload)
             self._log_api("发送股票模板参数数据成功", f"ID: {result}")
-            log('info',f"成功发送股票模板参数数据，返回ID: {result}")
             return result
         except Exception as e:
             self._log_api_error("发送股票模板参数数据", str(e))
@@ -421,47 +421,59 @@ class GoogleSheetService:
         stop=stop_after_attempt(3),  # 最多尝试3次
         wait=wait_exponential(multiplier=1, min=4, max=10),  # 指数退避：4s, 6s, 10s...
         reraise=True,  # 重试耗尽后重新抛出原始异常
-        retry=retry_if_result(lambda result: False in result or result is Exception)
+        retry=retry_if_result(lambda result: (False in result or result is Exception) and all(result[-1].values()))
     )
     def _execute_parameter_combination(self, index: int, combination: List, config_data: Dict[str, Any]) -> tuple:
         """执行单个参数组合"""
         try:
-            self._log_step(index + 1, "N/A", f"执行参数组合: {combination}")
-
             # 获取参数位置配置
             param_positions = config_data.get('parameter_positions', [])
-            
-            results = {}
-
-            # 准备要更新的单元格
-            cell_updates = {}
-            for i, position in enumerate(param_positions):
-                cell_updates[position] = combination[i]
-                results[position] = combination[i]
-
-            # 批量更新单元格
-            if self.google_sheet:
-                self._log_info(f"向Google Sheet写入参数: {cell_updates}")
-                self.google_sheet.update_jumped_cells(cell_updates)
-            else:
-                error_msg = "Google Sheet连接未建立"
-                self._log_error(error_msg)
-                return False, {}
-
             # 等待执行完成，检查指定位置
             check_positions = config_data.get('check_positions', [])
             result_positions = config_data.get('result_positions', [])
 
+            results = {}
+            cell_updates = {}
+
+            def _update_cell(num=0):
+                # 准备要更新的单元格
+                for i, position in enumerate(param_positions):
+                    cell_updates[position] = combination[i]
+                    results[position] = combination[i]
+
+                self._log_info(f"向Google Sheet写入参数: {cell_updates}")
+                self.google_sheet.update_jumped_cells(cell_updates)
+                if num <=0:
+                    return None
+                # 随机选择一个键
+                random_key = random.choice(list(cell_updates.keys()))
+
+                # 使用选中的键和对应的值更新单元格
+                self.google_sheet.update_cell(random_key, cell_updates[random_key])
+                return None
+
+            _update_cell()
+
             # 定时检查是否完成（最多检查60次，20-30秒）
             for attempt in range(60):
+                # 从配置获取执行延迟时间
+                config_manager = get_config_manager()
+                delay_min = int(config_manager.get_config('execution_delay_min', 20))
+                delay_max = int(config_manager.get_config('execution_delay_max', 30))
+                time.sleep(random.randint(delay_min, delay_max))
+
+
                 self._log_info(f"第 {attempt + 1} 次检查执行状态...")
+                if attempt % 10 == 0 or attempt in [3]:
+                    _update_cell(attempt)
+
                 # 检查所有位置是否都有产出
                 all_completed = True
                 if self.google_sheet and check_positions:
                     try:
                         # 批量获取检查位置的值
                         check_values = self.google_sheet.get_cells_batch(check_positions)
-                        
+                        self._log_info(f"获取到批量设置的值，检查是否更新：{check_values}")
                         for position in check_positions:
                             value = check_values.get(position, "")
                             if '%' in value:
@@ -477,36 +489,43 @@ class GoogleSheetService:
                         all_completed = False
 
                 if all_completed:
-                    self._log_info("所有参数执行完成，获取结果...")
                     # 批量获取结果
                     if self.google_sheet and result_positions:
                         try:
                             result_values = self.google_sheet.get_cells_batch(result_positions)
+                            self._log_info(f"获取到参数执行结果，检查是否正确：{result_values}")
                             for position in result_positions:
-                                value = result_values.get(position, "获取失败")
+                                value = result_values.get(position, "")
+                                if not value:
+                                    self._log_info(f"结果位置 {position} 值为空，跳过,重新检查")
+                                    raise Exception(f"结果位置 {position} 值为空，跳过,重新检查")
                                 if '%' in value:
-                                    value = float(value.replace('%', '')) / 100
+                                    value = float(value.replace('%', '').replace(',','')) / 100
+
                                 if str(value).startswith(("#", "#N/A")):
                                     error_msg = f"获取结果位置 {position} 时出错: {str(value)}"
                                     raise checkForErrors(f"检查报错，出现#|#N/A 这种异常错误，联系用户检查 {error_msg}")
-                                results[position] = value
+
+                                results[position] = round(value,5)
 
                         except checkForErrors as e:
                             raise e
                         except Exception as e:
                             error_msg = f"批量获取结果时出错: {str(e)}"
                             self._log_error(error_msg)
-                            raise e
+                            # 回退到逐个获取
+                            for position in result_positions:
+                                try:
+                                    value = self.google_sheet.get_cell(position)
+                                    results[position] = value
+                                except Exception as cell_error:
+                                    error_msg = f"获取结果位置 {position} 时出错: {str(cell_error)}"
+                                    self._log_error(error_msg)
+                                    results.clear()
+                                    continue
 
-                    self._log_info(f"执行结果: {results}")
                     return True, results
 
-
-                # 从配置获取执行延迟时间
-                config_manager = get_config_manager()
-                delay_min = int(config_manager.get_config('execution_delay_min', 20))
-                delay_max = int(config_manager.get_config('execution_delay_max', 30))
-                time.sleep(random.randint(delay_min, delay_max))
 
             self._log_warning("执行超时，未在规定时间内完成")
             return False, {}

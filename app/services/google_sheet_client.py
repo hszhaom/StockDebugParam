@@ -150,6 +150,10 @@ class GoogleSheet:
             logger.error(f'设置表格{sheet_rows},值:{sheet_values}错误。错误内容：{str(e)}')
             return f'设置表格{sheet_rows},值:{sheet_values}错误。错误内容：{str(e)}'
 
+    def update_cell(self, cell_address, cell_value):
+        """更新单个单元格"""
+        self.worksheet.update(cell_address, cell_value)  # 更新 A1 单元格
+
     def update_jumped_cells(self, cell_updates):
         """
         更新跳跃的单元格
@@ -233,7 +237,6 @@ class GoogleSheet:
                 else:
                     results[cell_ref] = ""
             
-            logger.info(f"批量获取了 {len(results)} 个单元格的值")
             return results
             
         except Exception as e:
