@@ -270,6 +270,7 @@ class GoogleSheetService:
                         "fee_annualized": result['I22'],
                         "year_rate": result['I23']
                     }
+                    self._log_info(f"准备发送参数数据: {param_load}")
                     # 保存结果到数据库
                     self._save_task_result(i, combination, result, success)
                     # # 推送结果，到生产数据库
@@ -329,7 +330,7 @@ class GoogleSheetService:
             返回的ID或0
         """
         try:
-            self._log_api("发送股票模板参数数据", f"stock_no: {payload.get('stock_no', 'unknown')}")
+            self._log_api("发送股票模板参数数据", f"payload: {payload}")
             result = self.api_client.insert_stock_template_param(payload)
             self._log_api("发送股票模板参数数据成功", f"ID: {result}")
             log('info',f"成功发送股票模板参数数据，返回ID: {result}")

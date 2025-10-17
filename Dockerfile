@@ -11,12 +11,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     FLASK_APP=run.py \
     FLASK_ENV=production
 
-# 安装系统依赖
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        gcc \
-        libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
+# # 安装系统依赖
+# RUN apt-get update \
+#     && apt-get install -y --no-install-recommends \
+#         gcc \
+#         libpq-dev \
+
+# RUN rm -rf /var/lib/apt/lists/*
 
 # 复制requirements.txt并安装Python依赖
 COPY requirements.txt .
