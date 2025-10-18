@@ -655,12 +655,22 @@
         pageResults.forEach(result => {
             const row = document.createElement('tr');
             
-            // 计算耗时：执行时间减去任务开始时间
+            // 计算耗时：当前结果时间与上一个结果时间比较
             let executionTime = '-';
-            if (result.timestamp && taskStartTime) {
-                const resultTime = new Date(result.timestamp);
-                if (!isNaN(resultTime.getTime())) {
-                    const durationMs = resultTime - taskStartTime;
+            if (result.timestamp) {
+                const currentResultTime = new Date(result.timestamp);
+                if (!isNaN(currentResultTime.getTime())) {
+                    let previousTime = taskStartTime; // 默认使用任务开始时间
+                    
+                    // 如果有上一个结果，使用上一个结果的时间
+                    if (index > 0) {
+                        const prevResult = filteredResults[index - 1];
+                        if (prevResult && prevResult.timestamp) {
+                            previousTime = new Date(prevResult.timestamp);
+                        }
+                    }
+                    
+                    const durationMs = currentResultTime - previousTime;
                     const durationSeconds = Math.round(durationMs / 1000);
                     if (durationSeconds >= 0) {
                         executionTime = formatDuration(durationSeconds);

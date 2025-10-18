@@ -393,7 +393,7 @@ class TaskManager:
                 task_logger.info("开始执行任务业务逻辑")
                 
                 # 执行任务
-                success = service.execute_task()
+                task_result = service.execute_task()
                 
                 # 检查任务当前状态（可能在执行过程中被取消）
                 task = Task.query.get(task_id)
@@ -405,13 +405,28 @@ class TaskManager:
                     self._add_task_log(task_id, 'info', f'任务执行完成，状态: cancelled（任务被取消）', app)
                 else:
                     # 根据执行结果更新状态
-                    final_status = 'completed' if success else 'error'
-                    task.status = final_status
-                    task.end_time = datetime.now()
-                    db.session.commit()
-                    
-                    task_logger.info(f'任务执行完成，状态: {final_status}')
-                    self._add_task_log(task_id, 'info', f'任务执行完成，状态: {final_status}', app)
+                    # task_result 可能是: 'completed', 'error', 'cancelled'
+                    if task_result == 'cancelled':
+                        # 任务在执行过程中被取消
+                        task.status = 'cancelled'
+                        task.end_time = datetime.now()
+                        db.session.commit()
+                        task_logger.info('任务执行完成，状态: cancelled（执行过程中被取消）')
+                        self._add_task_log(task_id, 'info', f'任务执行完成，状态: cancelled（执行过程中被取消）', app)
+                    elif task_result == 'completed':
+                        # 任务成功完成
+                        task.status = 'completed'
+                        task.end_time = datetime.now()
+                        db.session.commit()
+                        task_logger.info('任务执行完成，状态: completed')
+                        self._add_task_log(task_id, 'info', f'任务执行完成，状态: completed', app)
+                    else:
+                        # 任务执行出错
+                        task.status = 'error'
+                        task.end_time = datetime.now()
+                        db.session.commit()
+                        task_logger.info('任务执行完成，状态: error')
+                        self._add_task_log(task_id, 'info', f'任务执行完成，状态: error', app)
             
         except Exception as e:
             task_logger.exception(f"执行任务失败: {str(e)}")

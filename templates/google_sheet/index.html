@@ -110,6 +110,7 @@
                         <option value="running">执行中</option>
                         <option value="completed">已完成</option>
                         <option value="error">执行出错</option>
+                        <option value="cancelled">已取消</option>
                     </select>
                 </div>
             </div>
@@ -184,7 +185,7 @@
             currentPage = parseInt(page);
         }
         
-        if (filter && ['all', 'running', 'completed', 'error'].includes(filter)) {
+        if (filter && ['all', 'running', 'completed', 'error', 'cancelled'].includes(filter)) {
             currentFilter = filter;
         }
         

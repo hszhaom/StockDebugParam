@@ -16,6 +16,7 @@ from app.services.google_sheet_client import GoogleSheet
 from app.utils.db_retry import safe_db_operation, db_retry_manager
 from app.utils.db_stock_api import StockAPIClient
 from app.utils.logger import get_logger
+from app.utils.result_validator import validate_result_dict, validate_google_sheet_result, is_valid_result_value
 
 logger = get_logger(__name__)
 
@@ -61,7 +62,12 @@ class GoogleSheetService:
                 self.task = task
                 if not task:
                     self._log_error(f'任务 {self.task_id} 不存在')
-                    return False
+                    return 'error'
+
+                # 检查任务是否已被取消
+                if task.status == 'cancelled':
+                    self._log_info(f'任务 {self.task_id} 已被取消，停止执行')
+                    return 'cancelled'
 
                 # 解析配置
                 if isinstance(task.config, str):
@@ -69,7 +75,7 @@ class GoogleSheetService:
                         config_data = json.loads(task.config)
                     except json.JSONDecodeError as e:
                         self._log_error(f"配置解析失败: {str(e)}")
-                        return False
+                        return 'error'
                 else:
                     config_data = task.config or {}
 
@@ -86,20 +92,15 @@ class GoogleSheetService:
                 parameters = config_data.get('parameters', [])
                 if not parameters:
                     self._log_error("没有参数配置")
-                    return False
+                    return 'error'
                 
                 name = task.name
                 sheet_name = config_data.get('sheet_name', "")
 
-                # # 默认参数值
-                # multiplier_value = 4
-                # danbian_value = 0.85
-                # xiancang_value = 0.24
-                # zhishu_value = 0.88
-                # smoothing_value = 0.08
-                # bordering_value = 0.38
-                
-
+                # 检查任务是否已被取消
+                if task.status == 'cancelled':
+                    self._log_info(f'任务 {self.task_id} 已被取消，停止执行')
+                    return 'cancelled'
 
                 stock_param = self.get_single_stock_template_param(name)
 
@@ -109,58 +110,51 @@ class GoogleSheetService:
                     self._log_info(f"开始执行参数批量处理，multiplier_index: {multiplier_index}")
                     success_count, failed_count, task_status = self.get_bdl(task, name, parameters, config_data, multiplier_index)
                 elif stock_param != "error":
-                    # cell_updates = {
-                    #     "B6": multiplier_value,
-                    #     "B7": danbian_value,
-                    #     "B9": xiancang_value,
-                    #     "B10": zhishu_value,
-                    #     "B11": smoothing_value,
-                    #     "B12": bordering_value
-                    # }
-                    # # 批量更新单元格
-                    # if self.google_sheet:
-                    #     if cell_updates:  # 只有当cell_updates不为空时才更新
-                    #         self.google_sheet.update_jumped_cells(cell_updates)
-                    #         logger.info(f"默认参数已写入到表格: {cell_updates}")
-                    #     else:
-                    #         logger.warning("cell_updates为空，跳过更新操作")
-                    # else:
-                    #     logger.error("Google Sheet连接未建立")
-                    #     return False, {}
-                    # time.sleep(random.randint(20, 30))
-                    # self._push_log(self.task_id, 'info', f'默认参数已写入到表格: {cell_updates}', event_queue)
                     self._log_info("开始执行参数批量处理（默认参数模式）")
                     success_count, failed_count, task_status = self.get_bdl(task, name, parameters, config_data)
                 else:
                     self._log_error("获取股票参数失败")
-
+                    return 'error'
 
                 # 根据任务状态决定返回结果
                 if task_status == 'cancelled':
-                    # 任务被取消，更新数据库状态
-                    task.status = 'cancelled'
-                    db_retry_manager.commit_with_retry(db.session)
+                    # 任务被取消，保持cancelled状态
                     self._log_info(f'任务已取消，成功执行: {success_count}, 失败: {failed_count}')
-                    return False
+                    # 推送任务取消通知
+                    self.task_ok_to_dd(f'任务已取消！成功执行: {success_count}, 失败: {failed_count}')
+                    return 'cancelled'
                 elif task_status == 'error':
                     # 任务执行出错
-                    # TODO 推送告警
-                    self.error_dd(task.error)
-                    return False
+                    # 推送错误通知
+                    error_details = f'任务执行出错！成功: {success_count}, 失败: {failed_count}'
+                    if task.error:
+                        error_details += f', 错误信息: {str(task.error)}'
+                    self.error_dd(error_details)
+                    return 'error'
                 else:
                     if stock_param is not None and stock_param != "error":
-                        return success_count > 0
+                        final_status = 'completed' if success_count > 0 else 'error'
+                        if final_status == 'completed':
+                            # 推送成功完成通知
+                            self.task_ok_to_dd(f'任务成功完成！成功执行: {success_count}, 失败: {failed_count}')
+                        else:
+                            # 推送失败通知
+                            self.error_dd(f'任务执行失败！成功: {success_count}, 失败: {failed_count}')
+                        return final_status
 
                 if success_count == 0 and failed_count == 0:
                     self._log_error('任务执行失败')
-                    return False
+                    # 推送无结果失败通知
+                    self.error_dd('任务执行失败！没有成功或失败的参数组合')
+                    return 'error'
                 
-                self.task_ok_to_dd(f'成功执行: {success_count}, 失败: {failed_count}')
+                # 推送任务完成通知
+                self.task_ok_to_dd(f'任务执行完成！成功: {success_count}, 失败: {failed_count}')
                 # 推送任务完成信息
                 completion_msg = f'任务执行完成！成功: {success_count}, 失败: {failed_count}'
                 self._log_info(completion_msg)
 
-                return True
+                return 'completed'
 
         except Exception as e:
             # 检查是否是任务被取消导致的异常
@@ -168,7 +162,7 @@ class GoogleSheetService:
                 task = Task.query.get(self.task_id)
                 if task and task.status == 'cancelled':
                     self._log_info(f'任务已被取消: {str(e)}')
-                    return False
+                    return 'cancelled'
             except:
                 pass
             
@@ -176,7 +170,7 @@ class GoogleSheetService:
             error_msg = f"执行Google Sheet任务失败: {self.task_id}, 错误: {str(e)}"
             self._log_error(error_msg)
             self.error_dd(error_msg)
-            return False
+            return 'error'
 
     def get_bdl(self, task, name, parameters, config_data, index_z=0):
         """执行批量数据处理"""
@@ -425,9 +419,10 @@ class GoogleSheetService:
         stop=stop_after_attempt(3),  # 最多尝试3次
         wait=wait_exponential(multiplier=1, min=4, max=10),  # 指数退避：4s, 6s, 10s...
         reraise=True,  # 重试耗尽后重新抛出原始异常
-        retry=retry_if_result(lambda result: (False in result or result is Exception) and all(result[-1].values()))
+        retry=retry_if_result(lambda result: not result[0])
     )
-    def _execute_parameter_combination(self,combination: List, config_data: Dict[str, Any]) -> tuple:
+    @validate_result_dict(none_values=(None, '', ' ', '#N/A', '#DIV/0!', '#ERROR!', '#VALUE!', '#REF!', '#NAME?', '#NUM!'))
+    def _execute_parameter_combination(self, combination: List, config_data: Dict[str, Any]) -> tuple[bool, Dict[str, Any]]:
         """执行单个参数组合"""
         try:
             # 获取参数位置配置
@@ -447,7 +442,7 @@ class GoogleSheetService:
 
                 self._log_info(f"向Google Sheet写入参数: {cell_updates}")
                 self.google_sheet.update_jumped_cells(cell_updates)
-                if num <=0:
+                if num <= 0:
                     return None
                 # 随机选择一个键
                 random_key = random.choice(list(cell_updates.keys()))
@@ -456,10 +451,10 @@ class GoogleSheetService:
                 self.google_sheet.update_cell(random_key, cell_updates[random_key])
                 return None
 
-            def check_result(_position,_value = None):
-                if not _value:
-                    self._log_info(f"结果位置 {_position} 值为空，跳过,重新检查")
-                    raise Exception(f"结果位置 {_position} 值为空，跳过,重新检查")
+            def check_result(_position, _value=None):
+                if not _value or not is_valid_result_value(_value):
+                    self._log_info(f"结果位置 {_position} 值为空或无效，跳过重新检查")
+                    raise Exception(f"结果位置 {_position} 值为空或无效，跳过重新检查")
 
                 if str(_value).strip().startswith(("#", "#N/A")):
                     _error_msg = f"获取结果位置 {_position} 时出错: {str(_value)}"
@@ -472,6 +467,56 @@ class GoogleSheetService:
 
                 results[_position] = round(_value, 5)
 
+            def _validate_check_values(check_values: Dict[str, Any]) -> bool:
+                """验证检查位置的值是否有效"""
+                if not check_values:
+                    return False
+                
+                for position, value in check_values.items():
+                    if not value or value in ['#DIV/0!', '', '#N/A', '#ERROR!', '#VALUE!']:
+                        return False
+                    if 'target' in str(value).lower():
+                        return False
+                    
+                    # 检查是否与输入参数匹配
+                    input_key = f"B{position[1:]}"  # 将 I6 -> B6
+                    if input_key in results:
+                        try:
+                            check_val = float(value.replace('%', '')) / 100 if '%' in value else float(value)
+                            input_val = float(results[input_key])
+                            if round(check_val) != round(input_val):
+                                return False
+                        except (ValueError, TypeError):
+                            return False
+                
+                return True
+
+            def _validate_result_values(result_values: Dict[str, Any]) -> Tuple[bool, List[str]]:
+                """验证结果值是否完整有效"""
+                if not result_values:
+                    return False, ["结果字典为空"]
+                
+                missing_positions = []
+                invalid_positions = []
+                
+                for position in result_positions:
+                    if position not in result_values:
+                        missing_positions.append(position)
+                        continue
+                    
+                    value = result_values[position]
+                    if not is_valid_result_value(value):
+                        invalid_positions.append(f"{position}({value})")
+                
+                error_msgs = []
+                if missing_positions:
+                    error_msgs.append(f"缺少位置: {missing_positions}")
+                if invalid_positions:
+                    error_msgs.append(f"无效值: {invalid_positions}")
+                
+                return len(error_msgs) == 0, error_msgs
+
+            # 写入参数到Google Sheet
             _update_cell()
 
             # 定时检查是否完成（最多检查60次，20-30秒）
@@ -482,60 +527,85 @@ class GoogleSheetService:
                 delay_max = int(config_manager.get_config('execution_delay_max', 30))
                 time.sleep(random.randint(delay_min, delay_max))
 
-
                 self._log_info(f"第 {attempt + 1} 次检查执行状态...")
-                if attempt % 10 == 0 or attempt in [3]:
+                
+                # 定期刷新参数，防止模型卡顿
+                if attempt % 10 == 0 or attempt in [3, 5, 8]:
                     _update_cell(attempt)
 
                 # 检查所有位置是否都有产出
                 all_completed = True
+                
+                # 1. 检查检查位置的值
                 if self.google_sheet and check_positions:
                     try:
-                        # 批量获取检查位置的值
                         check_values = self.google_sheet.get_cells_batch(check_positions)
-                        self._log_info(f"获取到批量设置的值，检查是否更新：{check_values}")
-                        for position in check_positions:
-                            value = check_values.get(position, "")
-                            if '%' in value:
-                                value = float(value.replace('%', '')) / 100
-
-                            if value in ['#DIV/0!', ''] or 'target' in str(value) or float(value) != float(results[f"B{position[1:]}"]):
-                                all_completed = False
-                                break
-                                
+                        self._log_info(f"获取到检查位置的值: {check_values}")
+                        
+                        if not _validate_check_values(check_values):
+                            all_completed = False
+                            self._log_info(f"检查位置验证失败，继续等待...")
+                            continue
+                            
                     except Exception as e:
                         error_msg = f"批量检查位置时出错: {str(e)}"
                         self._log_error(error_msg)
                         all_completed = False
+                        continue
 
-                if all_completed:
-                    # 批量获取结果
-                    if self.google_sheet and result_positions:
-                        try:
-                            result_values = self.google_sheet.get_cells_batch(result_positions)
-                            self._log_info(f"获取到参数执行结果，检查是否正确：{result_values}")
-                            for position in result_positions:
-                                value = result_values.get(position, "")
-                                check_result(position,value)
+                # 2. 如果检查通过，获取结果
+                if all_completed and self.google_sheet and result_positions:
+                    try:
+                        result_values = self.google_sheet.get_cells_batch(result_positions)
+                        self._log_info(f"获取到参数执行结果: {result_values}")
+                        
+                        # 验证结果完整性
+                        is_valid, error_msgs = _validate_result_values(result_values)
+                        if not is_valid:
+                            self._log_warning(f"结果验证失败: {error_msgs}，继续等待...")
+                            all_completed = False
+                            continue
+                        
+                        # 所有结果都有效，处理结果
+                        for position in result_positions:
+                            value = result_values.get(position, "")
+                            check_result(position, value)
+                        
+                        # 使用专门的Google Sheet结果验证
+                        is_valid_gs, gs_error_msg = validate_google_sheet_result(results)
+                        if not is_valid_gs:
+                            self._log_warning(f"Google Sheet结果验证失败: {gs_error_msg}")
+                            return False, {}
+                        
+                        self._log_info(f"参数组合执行成功，结果: {results}")
+                        return True, results
 
-                        except checkForErrors as e:
-                            raise e
-                        except Exception as e:
-                            error_msg = f"批量获取结果时出错: {str(e)}"
-                            self._log_error(error_msg)
-                            # 回退到逐个获取
-                            for position in result_positions:
-                                try:
-                                    value = self.google_sheet.get_cell(position)
-                                    check_result(position, value)
-                                except Exception as cell_error:
-                                    error_msg = f"获取结果位置 {position} 时出错: {str(cell_error)}"
-                                    self._log_error(error_msg)
-                                    results.clear()
-                                    continue
-
-                    return True, results
-
+                    except checkForErrors as e:
+                        raise e
+                    except Exception as e:
+                        error_msg = f"批量获取结果时出错: {str(e)}"
+                        self._log_error(error_msg)
+                        
+                        # 回退到逐个获取
+                        fallback_success = True
+                        for position in result_positions:
+                            try:
+                                value = self.google_sheet.get_cell(position)
+                                check_result(position, value)
+                            except Exception as cell_error:
+                                error_msg = f"获取结果位置 {position} 时出错: {str(cell_error)}"
+                                self._log_error(error_msg)
+                                fallback_success = False
+                                break
+                        
+                        if fallback_success:
+                            # 验证回退模式的结果
+                            is_valid_gs, gs_error_msg = validate_google_sheet_result(results)
+                            if is_valid_gs:
+                                return True, results
+                            else:
+                                self._log_warning(f"回退模式结果验证失败: {gs_error_msg}")
+                                return False, {}
 
             self._log_warning("执行超时，未在规定时间内完成")
             return False, {}
@@ -544,7 +614,6 @@ class GoogleSheetService:
             error_msg = f"执行参数组合时出错: {traceback.format_exc()}"
             self._log_error(error_msg)
             raise e
-
 
     def _log(self, level: str, message: str, log_type: str = 'general', **kwargs):
         """
