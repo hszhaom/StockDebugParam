@@ -46,11 +46,11 @@ def validate_result_dict(none_values: Tuple[Any, ...] = (None, '', ' ', 0, '0', 
                 empty_keys = []
                 for key, value in result_dict.items():
                     if value in none_values:
-                        empty_keys.append(key)
+                        empty_keys.append([key,value])
                     elif isinstance(value, str) and value.strip() == '':
-                        empty_keys.append(key)
-                    elif isinstance(value, (int, float)) and value == 0:
-                        empty_keys.append(key)
+                        empty_keys.append([key,value])
+                    elif not str(key).startswith(("B","b")) and  isinstance(value, (int, float)) and value == 0:
+                        empty_keys.append([key,value])
                 
                 # 如果发现空值，记录日志并返回失败
                 if empty_keys:
@@ -84,8 +84,8 @@ def validate_google_sheet_result(result_dict: Dict[str, Any]) -> Tuple[bool, str
     # 定义必需的键
     _required_keys = ['B6', 'B7', 'B9', 'B10', 'B11', 'B12']  # 参数键
     _result_keys = ['I15', 'I16', 'I17', 'I18', 'I19', 'I20', 'I21', 'I22', 'I23']  # 结果键
-    required_keys = config.get('parameter_positions',_required_keys)  # 参数键
-    result_keys = config.get('result_positions',_result_keys)  # 结果键
+    required_keys = config.get_config('parameter_positions',_required_keys)  # 参数键
+    result_keys = config.get_config('result_positions',_result_keys)  # 结果键
     
     missing_keys = []
     empty_keys = []

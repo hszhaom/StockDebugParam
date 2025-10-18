@@ -3,7 +3,7 @@ import random
 import time
 import traceback
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional,Tuple
 
 from flask import current_app
 from sqlalchemy import text
@@ -419,7 +419,7 @@ class GoogleSheetService:
         stop=stop_after_attempt(3),  # 最多尝试3次
         wait=wait_exponential(multiplier=1, min=4, max=10),  # 指数退避：4s, 6s, 10s...
         reraise=True,  # 重试耗尽后重新抛出原始异常
-        retry=retry_if_result(lambda result: not result[0])
+        retry=retry_if_result(lambda result: result[0] is False)
     )
     @validate_result_dict(none_values=(None, '', ' ', '#N/A', '#DIV/0!', '#ERROR!', '#VALUE!', '#REF!', '#NAME?', '#NUM!'))
     def _execute_parameter_combination(self, combination: List, config_data: Dict[str, Any]) -> tuple[bool, Dict[str, Any]]:
@@ -516,8 +516,22 @@ class GoogleSheetService:
                 
                 return len(error_msgs) == 0, error_msgs
 
+
+            sleep_num = 5
+
+            def get_sell_sleep(min_sleep: int, max_sleep: int) -> int:
+                nonlocal sleep_num
+                if sleep_num <= 0:
+                    sleep_num = 5
+                _ = min(min_sleep + sleep_num * 5, max_sleep)  # 最多60秒
+                sleep_num -= 1
+                return int(_)
+
             # 写入参数到Google Sheet
             _update_cell()
+
+            is_exit = 0
+            max_error_num = 3
 
             # 定时检查是否完成（最多检查60次，20-30秒）
             for attempt in range(60):
@@ -525,9 +539,10 @@ class GoogleSheetService:
                 config_manager = get_config_manager()
                 delay_min = int(config_manager.get_config('execution_delay_min', 20))
                 delay_max = int(config_manager.get_config('execution_delay_max', 30))
-                time.sleep(random.randint(delay_min, delay_max))
+                _ = get_sell_sleep(delay_min, delay_max)
+                self._log_info(f"第 {attempt + 1} 次检查执行状态... delay {_} 秒")
+                time.sleep(_)
 
-                self._log_info(f"第 {attempt + 1} 次检查执行状态...")
                 
                 # 定期刷新参数，防止模型卡顿
                 if attempt % 10 == 0 or attempt in [3, 5, 8]:
@@ -585,7 +600,9 @@ class GoogleSheetService:
                     except Exception as e:
                         error_msg = f"批量获取结果时出错: {str(e)}"
                         self._log_error(error_msg)
-                        
+                        if is_exit <= max_error_num:
+                            self._log_error(error_msg)
+                            continue
                         # 回退到逐个获取
                         fallback_success = True
                         for position in result_positions:

@@ -49,7 +49,7 @@ class SafeTimedRotatingFileHandler(logging.handlers.TimedRotatingFileHandler):
             self.stream = None
         
         # 生成带时间戳的新文件名
-        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        timestamp = time.strftime("%Y%m%d")
         base_name = Path(self.baseFilename)
         new_name = base_name.parent / f"{base_name.stem}_{timestamp}{base_name.suffix}"
         
